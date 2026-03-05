@@ -18,4 +18,11 @@
     <string name="original_sms">Original SMS</string>
     <string name="no_transactions">No transactions yet</string>
     <string name="tap_to_scan">Tap the button below to scan your SMS</string>
+
+    <!-- App shortcut labels -->
+    <string name="shortcut_expense_short">Add Expense</string>
+    <string name="shortcut_expense_long">Add Expense Transaction</string>
+    <string name="shortcut_income_short">Add Income</string>
+    <string name="shortcut_income_long">Add Income Transaction</string>
+    <string name="shortcut_disabled">WalletFlow shortcuts are not available</string>
 </resources>

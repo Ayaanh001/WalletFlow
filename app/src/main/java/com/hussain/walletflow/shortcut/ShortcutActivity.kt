@@ -1,0 +1,743 @@
+package com.hussain.walletflow.shortcut
+
+import android.os.Bundle
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModelProvider
+import com.hussain.walletflow.R
+import com.hussain.walletflow.data.*
+import com.hussain.walletflow.ui.screens.CreateCustomItemScreen
+import com.hussain.walletflow.ui.screens.DatePickerDialog
+import com.hussain.walletflow.ui.screens.TimePickerDialog
+import com.hussain.walletflow.ui.theme.ExpenseRed
+import com.hussain.walletflow.ui.theme.IncomeGreen
+import com.hussain.walletflow.ui.theme.TransactionTrackerTheme
+import com.hussain.walletflow.utils.*
+import com.hussain.walletflow.viewmodel.TransactionViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
+
+class ShortcutActivity : FragmentActivity() {
+
+    companion object {
+        const val EXTRA_TRANSACTION_TYPE = "shortcut_transaction_type"
+        const val TYPE_INCOME = "INCOME"
+        const val TYPE_EXPENSE = "EXPENSE"
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        val typeString = intent.getStringExtra(EXTRA_TRANSACTION_TYPE) ?: TYPE_EXPENSE
+        val initialType = if (typeString == TYPE_INCOME) TransactionType.INCOME else TransactionType.EXPENSE
+
+        val viewModel = ViewModelProvider(this)[TransactionViewModel::class.java]
+
+        setContent {
+            TransactionTrackerTheme {
+                ShortcutAddTransactionScreen(
+                    viewModel = viewModel,
+                    initialType = initialType,
+                    onDone = { finish() }
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ShortcutAddTransactionScreen(
+    viewModel: TransactionViewModel,
+    initialType: TransactionType,
+    onDone: () -> Unit
+) {
+    val context = LocalContext.current
+    val prefsRepository = remember { UserPreferencesRepository(context) }
+    val selectedCurrency by prefsRepository.currencyFlow.collectAsState(
+        initial = UserPreferencesRepository.DEFAULT_CURRENCY
+    )
+    val currency = remember(selectedCurrency) {
+        CurrencyData.currencies.find { it.code == selectedCurrency }
+            ?: CurrencyData.currencies.first()
+    }
+
+    var selectedType by remember { mutableStateOf(initialType) }
+    var amount by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("") }
+    var selectedPaymentMethod by remember { mutableStateOf("Cash") }
+    var selectedDate by remember { mutableStateOf(Calendar.getInstance()) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var categoryExpanded by remember { mutableStateOf(true) }
+    var paymentExpanded by remember { mutableStateOf(true) }
+
+    val amountFocusRequester = remember { FocusRequester() }
+    val nameFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    val customItemsRepo = remember { CustomItemsRepository(context) }
+    val coroutineScope = rememberCoroutineScope()
+    val customCategories by customItemsRepo.customCategoriesFlow.collectAsState(initial = emptyList())
+    val customPaymentMethods by customItemsRepo.customPaymentMethodsFlow.collectAsState(initial = emptyList())
+
+    // Keep global maps in sync for anything outside this screen that uses them
+    LaunchedEffect(customCategories) { registerCustomCategories(customCategories) }
+    LaunchedEffect(customPaymentMethods) { registerCustomPaymentMethods(customPaymentMethods) }
+
+    // Synchronous local lookup maps — built directly from state on the same frame
+    // that customCategories/customPaymentMethods change, so chips always get the
+    // correct icon+color immediately without waiting for a LaunchedEffect.
+    val customCategoryStyleMap = remember(customCategories) {
+        customCategories.associate { item ->
+            val color = parseHexColor(item.colorHex)
+            val icon  = AVAILABLE_ICONS[item.iconKey] ?: Icons.Filled.Category
+            item.name to Pair(icon, color)
+        }
+    }
+    val customPaymentStyleMap = remember(customPaymentMethods) {
+        customPaymentMethods.associate { item ->
+            val color = parseHexColor(item.colorHex)
+            val icon  = AVAILABLE_ICONS[item.iconKey] ?: Icons.Filled.Payments
+            item.name to Pair(icon, color)
+        }
+    }
+
+    fun categoryColor(name: String) = customCategoryStyleMap[name]?.second ?: getCategoryColor(name)
+    fun categoryIcon(name: String)  = customCategoryStyleMap[name]?.first  ?: getCategoryIcon(name)
+    fun paymentColor(name: String)  = customPaymentStyleMap[name]?.second  ?: getPaymentChipColor(name)
+    fun paymentIcon(name: String)   = customPaymentStyleMap[name]?.first   ?: getPaymentIcon(name)
+
+    var showNewCategoryDialog by remember { mutableStateOf(false) }
+    var showNewPaymentDialog by remember { mutableStateOf(false) }
+
+    // Set default category when type first resolves
+    LaunchedEffect(selectedType) {
+        if (selectedCategory.isEmpty()) {
+            val defaults = if (selectedType == TransactionType.INCOME)
+                TransactionCategories.INCOME_CATEGORIES
+            else TransactionCategories.EXPENSE_CATEGORIES
+            selectedCategory = defaults.firstOrNull() ?: ""
+        }
+    }
+
+    val builtInCategories = if (selectedType == TransactionType.INCOME)
+        TransactionCategories.INCOME_CATEGORIES else TransactionCategories.EXPENSE_CATEGORIES
+    val typeString = if (selectedType == TransactionType.INCOME) "income" else "expense"
+    val categories = remember(builtInCategories, customCategories, typeString) {
+        builtInCategories + customCategories.filter { it.type == typeString }.map { it.name }
+    }
+
+    // Auto-open keyboard for amount
+    LaunchedEffect(Unit) {
+        delay(300)
+        amountFocusRequester.requestFocus()
+    }
+
+    val dateFormat = remember { SimpleDateFormat("MM/dd/yyyy", Locale.getDefault()) }
+    val timeFormat = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
+
+    fun saveTransaction(): Boolean {
+        val amountValue = amount.toDoubleOrNull() ?: 0.0
+        if (amountValue > 0) {
+            val transaction = Transaction(
+                date = selectedDate.timeInMillis,
+                amount = amountValue,
+                type = selectedType,
+                category = selectedCategory,
+                bankName = "",
+                accountLastFour = "",
+                remark = name,
+                originalSms = "",
+                paymentMethod = selectedPaymentMethod,
+                isAddedToMonthly = true
+            )
+            viewModel.insertTransaction(transaction)
+            return true
+        }
+        return false
+    }
+
+    fun resetForm() {
+        amount = ""
+        name = ""
+        val defaults = if (selectedType == TransactionType.INCOME)
+            TransactionCategories.INCOME_CATEGORIES else TransactionCategories.EXPENSE_CATEGORIES
+        selectedCategory = defaults.firstOrNull() ?: ""
+        selectedPaymentMethod = "Cash"
+        selectedDate = Calendar.getInstance()
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Add Transaction",
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onDone) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                modifier = Modifier.statusBarsPadding()
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        bottomBar = {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { if (saveTransaction()) resetForm() },
+                        modifier = Modifier.weight(0.5f),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(vertical = 14.dp)
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Save & Add New", fontWeight = FontWeight.SemiBold)
+                    }
+                    Button(
+                        onClick = { if (saveTransaction()) onDone() },
+                        modifier = Modifier.weight(0.5f),
+                        shape = RoundedCornerShape(16.dp),
+                        contentPadding = PaddingValues(vertical = 14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Icon(Icons.Filled.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Save", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        val surfaceColor = MaterialTheme.colorScheme.surface
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp)
+            ) {
+                // ─── Expense / Income Tab Switcher ───
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf(TransactionType.EXPENSE to "Expense", TransactionType.INCOME to "Income")
+                            .forEach { (type, label) ->
+                                val isSelected = selectedType == type
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(
+                                            if (isSelected) MaterialTheme.colorScheme.primary
+                                            else Color.Transparent
+                                        )
+                                        .clickable {
+                                            if (selectedType != type) {
+                                                selectedType = type
+                                                val newCategories = if (type == TransactionType.INCOME)
+                                                    TransactionCategories.INCOME_CATEGORIES
+                                                else TransactionCategories.EXPENSE_CATEGORIES
+                                                selectedCategory = newCategories.firstOrNull() ?: ""
+                                            }
+                                        }
+                                        .padding(vertical = 12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.titleSmall
+                                    )
+                                }
+                            }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // ─── Amount Input ───
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "AMOUNT",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selectedType == TransactionType.EXPENSE) ExpenseRed else IncomeGreen,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    val amountTextStyle = MaterialTheme.typography.displayMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            modifier = Modifier.width(IntrinsicSize.Min),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = currency.symbol, style = amountTextStyle)
+                            BasicTextField(
+                                value = amount,
+                                onValueChange = { newValue ->
+                                    if (newValue.isEmpty() || newValue.matches(Regex("^\\d*\\.?\\d*$"))) {
+                                        amount = newValue
+                                    }
+                                },
+                                textStyle = amountTextStyle,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Next
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onNext = { nameFocusRequester.requestFocus() }
+                                ),
+                                singleLine = true,
+                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                modifier = Modifier.weight(1f).focusRequester(amountFocusRequester),
+                                decorationBox = { innerTextField ->
+                                    if (amount.isEmpty()) {
+                                        Text(
+                                            text = "0",
+                                            style = amountTextStyle,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // ─── Name ───
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 0.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Filled.Description,
+                            contentDescription = null,
+                            modifier = Modifier.size(22.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        TextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            placeholder = {
+                                Text(
+                                    "What was this for?",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
+                            },
+                            modifier = Modifier.weight(1f).focusRequester(nameFocusRequester).offset(x = (-4).dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() })
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ─── Category Section ───
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable { categoryExpanded = !categoryExpanded }
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.Category, contentDescription = null,
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("Category", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                    if (selectedCategory.isNotEmpty()) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                categoryIcon(selectedCategory), contentDescription = null,
+                                                modifier = Modifier.size(14.dp),
+                                                tint = categoryColor(selectedCategory)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                selectedCategory,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = categoryColor(selectedCategory),
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                            Icon(
+                                if (categoryExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                contentDescription = "Toggle",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        AnimatedVisibility(visible = categoryExpanded, enter = expandVertically(), exit = shrinkVertically()) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                                @OptIn(ExperimentalLayoutApi::class)
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    categories.forEach { category ->
+                                        key(category) {
+                                            val isSelected = selectedCategory == category
+                                            val chipColor = categoryColor(category)
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .then(if (isSelected) Modifier.border(1.5.dp, chipColor, RoundedCornerShape(10.dp)) else Modifier)
+                                                    .background(if (isSelected) chipColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface)
+                                                    .clickable { selectedCategory = if (selectedCategory == category) "" else category }
+                                                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    Icon(categoryIcon(category), contentDescription = null, modifier = Modifier.size(16.dp), tint = chipColor)
+                                                    Text(
+                                                        category,
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (isSelected) chipColor else MaterialTheme.colorScheme.onSurface,
+                                                        maxLines = 1
+                                                    )
+                                                }
+                                            }
+                                        } // end key
+                                    }
+                                    // + New chip
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                            .clickable { showNewCategoryDialog = true }
+                                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Icon(Icons.Filled.Add, contentDescription = "New category", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                            Text("New", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ─── Payment Method Section ───
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable { paymentExpanded = !paymentExpanded }
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Payment, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text("Payment Method", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                                    if (selectedPaymentMethod.isNotEmpty()) {
+                                        val chipColor = paymentColor(selectedPaymentMethod)
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            when {
+                                                selectedPaymentMethod == "GPay" -> Image(painterResource(R.drawable.gpay), "GPay", modifier = Modifier.size(14.dp))
+                                                selectedPaymentMethod == "PhonePe" -> Image(painterResource(R.drawable.phonepe), "PhonePe", modifier = Modifier.size(14.dp))
+                                                selectedPaymentMethod.contains("•") -> Icon(Icons.Default.AccountBalance, contentDescription = null, modifier = Modifier.size(14.dp), tint = chipColor)
+                                                else -> Icon(paymentIcon(selectedPaymentMethod), contentDescription = null, modifier = Modifier.size(14.dp), tint = chipColor)
+                                            }
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(selectedPaymentMethod, style = MaterialTheme.typography.bodySmall, color = chipColor, fontWeight = FontWeight.SemiBold)
+                                        }
+                                    }
+                                }
+                            }
+                            Icon(
+                                if (paymentExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                                contentDescription = "Toggle",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        AnimatedVisibility(visible = paymentExpanded, enter = expandVertically(), exit = shrinkVertically()) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
+                                val allPaymentMethods = remember(customPaymentMethods) {
+                                    TransactionCategories.PAYMENT_METHODS + customPaymentMethods.map { it.name }
+                                }
+                                @OptIn(ExperimentalLayoutApi::class)
+                                FlowRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    allPaymentMethods.forEach { method ->
+                                        key(method) {
+                                            val isSelected = selectedPaymentMethod == method
+                                            val chipColor = paymentColor(method)
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(10.dp))
+                                                    .then(if (isSelected) Modifier.border(1.5.dp, chipColor, RoundedCornerShape(10.dp)) else Modifier)
+                                                    .background(if (isSelected) chipColor.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface)
+                                                    .clickable { selectedPaymentMethod = method }
+                                                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                    when {
+                                                        method == "GPay" -> Image(painterResource(R.drawable.gpay), "GPay", modifier = Modifier.size(16.dp))
+                                                        method == "PhonePe" -> Image(painterResource(R.drawable.phonepe), "PhonePe", modifier = Modifier.size(16.dp))
+                                                        method.contains("•") -> Icon(Icons.Default.AccountBalance, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (isSelected) chipColor else MaterialTheme.colorScheme.onSurfaceVariant)
+                                                        else -> Icon(paymentIcon(method), contentDescription = null, modifier = Modifier.size(16.dp), tint = chipColor)
+                                                    }
+                                                    Text(
+                                                        method,
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                        color = if (isSelected) chipColor else MaterialTheme.colorScheme.onSurface,
+                                                        maxLines = 1
+                                                    )
+                                                }
+                                            }
+                                        } // end key
+                                    }
+                                    // + New chip
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                            .clickable { showNewPaymentDialog = true }
+                                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            Icon(Icons.Filled.Add, contentDescription = "New payment method", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                            Text("New", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ─── Date Section ───
+                Card(
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable { showDatePicker = true },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.CalendarToday, contentDescription = null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Date", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = run {
+                                    val today = Calendar.getInstance()
+                                    val isToday = selectedDate.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                                            selectedDate.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+                                    if (isToday) "Today, ${timeFormat.format(selectedDate.time)}"
+                                    else "${dateFormat.format(selectedDate.time)}, ${timeFormat.format(selectedDate.time)}"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(Icons.Filled.ChevronRight, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+
+            // Edge fade
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .background(Brush.verticalGradient(colors = listOf(Color.Transparent, surfaceColor)))
+            )
+        }
+    }
+
+    // ── Overlays ──────────────────────────────────────────────────────────────
+    if (showNewCategoryDialog) {
+        CreateCustomItemScreen(
+            isCategory = true,
+            initialTypeIndex = if (selectedType == TransactionType.INCOME) 1 else 0,
+            existingNames = TransactionCategories.EXPENSE_CATEGORIES +
+                    TransactionCategories.INCOME_CATEGORIES +
+                    customCategories.map { it.name },
+            onConfirm = { itemName, iconKey, colorHex, itemType ->
+                val newItem = CustomItem(itemName, iconKey, colorHex, itemType)
+                registerCustomCategories(customCategories + newItem)
+                selectedCategory = itemName
+                coroutineScope.launch { customItemsRepo.addCustomCategory(newItem) }
+                showNewCategoryDialog = false
+            },
+            onBack = { showNewCategoryDialog = false }
+        )
+    }
+
+    if (showNewPaymentDialog) {
+        CreateCustomItemScreen(
+            isCategory = false,
+            existingNames = TransactionCategories.PAYMENT_METHODS + customPaymentMethods.map { it.name },
+            onConfirm = { itemName, iconKey, colorHex, itemType ->
+                val newItem = CustomItem(itemName, iconKey, colorHex, itemType)
+                registerCustomPaymentMethods(customPaymentMethods + newItem)
+                selectedPaymentMethod = itemName
+                coroutineScope.launch { customItemsRepo.addCustomPaymentMethod(newItem) }
+                showNewPaymentDialog = false
+            },
+            onBack = { showNewPaymentDialog = false }
+        )
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            selectedDate = selectedDate,
+            onDateSelected = { selectedDate = it; showDatePicker = false; showTimePicker = true },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+
+    if (showTimePicker) {
+        TimePickerDialog(
+            selectedDate = selectedDate,
+            onTimeSelected = { selectedDate = it; showTimePicker = false },
+            onDismiss = { showTimePicker = false }
+        )
+    }
+}
