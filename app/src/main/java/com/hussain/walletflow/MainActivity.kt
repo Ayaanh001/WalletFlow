@@ -39,14 +39,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.hussain.walletflow.ui.screens.*
 import com.hussain.walletflow.ui.theme.TransactionTrackerTheme
 import com.hussain.walletflow.viewmodel.TransactionViewModel
 import java.util.Calendar
 
 class MainActivity : androidx.fragment.app.FragmentActivity() {
-        @OptIn(ExperimentalPermissionsApi::class)
         override fun onCreate(savedInstanceState: Bundle?) {
                 installSplashScreen()
                 super.onCreate(savedInstanceState)
