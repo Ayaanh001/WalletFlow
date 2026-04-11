@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.Accessible
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.AirplanemodeActive
 import androidx.compose.material.icons.filled.Analytics
@@ -211,6 +212,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hussain.walletflow.utils.AVAILABLE_COLORS
 import com.hussain.walletflow.utils.AVAILABLE_ICONS
 import com.hussain.walletflow.utils.colorToHex
@@ -514,7 +516,7 @@ fun CreateCustomItemScreen(
                 if (isCategory) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(50.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                         )
@@ -528,7 +530,7 @@ fun CreateCustomItemScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .clip(RoundedCornerShape(50.dp))
                                         .background(
                                             if (isSelected) MaterialTheme.colorScheme.primary
                                             else Color.Transparent
@@ -539,7 +541,7 @@ fun CreateCustomItemScreen(
                                 ) {
                                     Text(
                                         text = label,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Black,
                                         color = if (isSelected) MaterialTheme.colorScheme.onPrimary
                                         else MaterialTheme.colorScheme.onSurfaceVariant,
                                         style = MaterialTheme.typography.titleSmall
@@ -553,9 +555,9 @@ fun CreateCustomItemScreen(
                 // ── Live preview chip ─────────────────────────────────────────
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(13.dp))
+                        .clip(RoundedCornerShape(50.dp))
                         .background(selectedColor.copy(alpha = 0.12f))
-                        .border(1.5.dp, selectedColor.copy(alpha = 0.5f), RoundedCornerShape(13.dp))
+                        .border(1.5.dp, selectedColor.copy(alpha = 0.5f), RoundedCornerShape(50.dp))
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -579,20 +581,21 @@ fun CreateCustomItemScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Tappable icon circle — opens icon picker
-                    Surface(
-                        onClick = { keyboard?.hide(); showIconPicker = true },
-                        shape = RoundedCornerShape(14.dp),
-                        color = selectedColor.copy(alpha = 0.12f),
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                resolveIcon(selectedKey),
-                                contentDescription = "Choose icon",
-                                modifier = Modifier.size(26.dp),
-                                tint = selectedColor
-                            )
+                    Box(modifier = Modifier.padding(top = if (nameError != null) 0.dp else 7.dp)) {
+                        Surface(
+                            onClick = { keyboard?.hide(); showIconPicker = true },
+                            shape = RoundedCornerShape(14.dp),
+                            color = selectedColor.copy(alpha = 0.12f),
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    resolveIcon(selectedKey),
+                                    contentDescription = "Choose icon",
+                                    modifier = Modifier.size(26.dp),
+                                    tint = selectedColor
+                                )
+                            }
                         }
                     }
 
@@ -624,39 +627,36 @@ fun CreateCustomItemScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Card(
+                    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
+                        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(4.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            listOf("Swatches" to 0, "Wheel" to 1).forEach { (label, idx) ->
-                                val isSelected = colorTabIndex == idx
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(
-                                            if (isSelected) MaterialTheme.colorScheme.primary
-                                            else Color.Transparent
-                                        )
-                                        .clickable { colorTabIndex = idx }
-                                        .padding(vertical = 10.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = label,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.titleSmall
-                                    )
-                                }
+                        listOf("Swatches" to 0, "Wheel" to 1).forEachIndexed { index, (label, idx) ->
+                            val isSelected = colorTabIndex == idx
+
+                            val shapes = when (index) {
+                                0    -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                else -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                            }
+
+                            ToggleButton(
+                                checked         = isSelected,
+                                onCheckedChange = { if (it) colorTabIndex = idx },
+                                shapes          = shapes,
+                                modifier        = Modifier.weight(1f),
+                                colors          = ToggleButtonDefaults.toggleButtonColors(
+                                    checkedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    checkedContentColor   = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    containerColor        = MaterialTheme.colorScheme.tertiaryContainer,
+                                    contentColor          = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            ) {
+                                Text(
+                                    text       = label,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize   = 13.sp
+                                )
                             }
                         }
                     }
@@ -667,7 +667,7 @@ fun CreateCustomItemScreen(
                         label = "color_tab"
                     ) { tab ->
                         if (tab == 0) {
-                            val cols = 5
+                            val cols = 6
                             val rows = (AVAILABLE_COLORS.size + cols - 1) / cols
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 repeat(rows) { row ->
@@ -723,14 +723,20 @@ fun CreateCustomItemScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape    = RoundedCornerShape(14.dp),
-                    colors   = ButtonDefaults.buttonColors(containerColor = selectedColor)
+                    shape    = RoundedCornerShape(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         "Create",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }
@@ -787,7 +793,7 @@ fun IconPickerScreen(
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(50.dp)
                 )
 
                 if (filteredKeys != null) {
