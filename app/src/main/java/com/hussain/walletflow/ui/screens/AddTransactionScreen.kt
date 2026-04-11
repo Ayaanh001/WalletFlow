@@ -249,15 +249,10 @@ fun AddTransactionScreen(
                                 actions = {
                                         if (currentTransactionId != null) {
                                                 Surface(
-                                                        onClick = {
-                                                                showDeleteConfirmDialog = true
-                                                        },
+                                                        onClick = { showDeleteConfirmDialog = true },
                                                         shape = RoundedCornerShape(12.dp),
-                                                        color =
-                                                                MaterialTheme.colorScheme.error
-                                                                        .copy(alpha = 0.1f),
-                                                        contentColor =
-                                                                MaterialTheme.colorScheme.error,
+                                                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                                                        contentColor = MaterialTheme.colorScheme.error,
                                                         modifier =
                                                                 Modifier.padding(end = 8.dp)
                                                                         .size(40.dp)
@@ -265,10 +260,8 @@ fun AddTransactionScreen(
                                                         Box(contentAlignment = Alignment.Center) {
                                                                 Icon(
                                                                         Icons.Default.Delete,
-                                                                        contentDescription =
-                                                                                "Delete transaction",
-                                                                        modifier =
-                                                                                Modifier.size(20.dp)
+                                                                        contentDescription = "Delete transaction",
+                                                                        modifier = Modifier.size(20.dp)
                                                                 )
                                                         }
                                                 }
@@ -284,10 +277,7 @@ fun AddTransactionScreen(
                                         modifier =
                                                 Modifier.fillMaxWidth()
                                                         .navigationBarsPadding()
-                                                        .padding(
-                                                                horizontal = 16.dp,
-                                                                vertical = 12.dp
-                                                        ),
+                                                        .padding(horizontal = 16.dp, vertical = 12.dp),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                         // Save & Add New button (left, outlined)
@@ -353,14 +343,7 @@ fun AddTransactionScreen(
                                 Card(
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                                         shape = RoundedCornerShape(50.dp),
-                                        colors =
-                                                CardDefaults.cardColors(
-                                                        containerColor =
-                                                                MaterialTheme.colorScheme
-                                                                        .surfaceVariant.copy(
-                                                                                alpha = 0.5f
-                                                                        )
-                                                )
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                 ) {
                                         Row(
                                                 modifier = Modifier.fillMaxWidth().padding(4.dp),
@@ -376,40 +359,19 @@ fun AddTransactionScreen(
                                                                 Box(
                                                                         modifier =
                                                                                 Modifier.weight(1f)
-                                                                                        .clip(
-                                                                                                RoundedCornerShape(
-                                                                                                        50.dp
-                                                                                                )
-                                                                                        )
-                                                                                        .background(
-                                                                                                if (isSelected)
-                                                                                                        MaterialTheme
-                                                                                                                .colorScheme
-                                                                                                                .primary
-                                                                                                else
-                                                                                                        Color.Transparent
-                                                                                        )
+                                                                                        .clip(RoundedCornerShape(50.dp))
+                                                                                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                                                                                         .clickable {
-                                                                                                if (selectedType !=
-                                                                                                        type
+                                                                                                if (selectedType != type
                                                                                                 ) {
-                                                                                                        selectedType =
-                                                                                                                type
+                                                                                                        selectedType = type
                                                                                                         // Reset category when type changes
                                                                                                         val newCategories =
-                                                                                                                if (type ==
-                                                                                                                        TransactionType
-                                                                                                                                .INCOME
-                                                                                                                )
-                                                                                                                        TransactionCategories
-                                                                                                                                .INCOME_CATEGORIES
+                                                                                                                if (type == TransactionType.INCOME)
+                                                                                                                        TransactionCategories.INCOME_CATEGORIES
                                                                                                                 else
-                                                                                                                        TransactionCategories
-                                                                                                                                .EXPENSE_CATEGORIES
-                                                                                                        selectedCategory =
-                                                                                                                newCategories
-                                                                                                                        .firstOrNull()
-                                                                                                                        ?: ""
+                                                                                                                        TransactionCategories.EXPENSE_CATEGORIES
+                                                                                                        selectedCategory = newCategories.firstOrNull() ?: ""
                                                                                                 }
                                                                                         }
                                                                                         .padding(vertical = 12.dp),
@@ -459,17 +421,13 @@ fun AddTransactionScreen(
                                                 contentAlignment = Alignment.Center
                                         ) {
                                                 Row(
-                                                        modifier =
-                                                                Modifier.width(IntrinsicSize.Min),
-                                                        verticalAlignment =
-                                                                Alignment.CenterVertically
+                                                        modifier = Modifier.width(IntrinsicSize.Min),
+                                                        verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                         Text(
                                                                 text = "${currency.symbol}",
                                                                 style = amountTextStyle,
-                                                                color =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onSurface
+                                                                color = MaterialTheme.colorScheme.onSurface
                                                         )
                                                         BasicTextField(
                                                                 value = amount,
@@ -487,42 +445,21 @@ fun AddTransactionScreen(
                                                                 textStyle = amountTextStyle,
                                                                 keyboardOptions =
                                                                         KeyboardOptions(
-                                                                                keyboardType =
-                                                                                        KeyboardType
-                                                                                                .Decimal,
-                                                                                imeAction =
-                                                                                        ImeAction
-                                                                                                .Next
+                                                                                keyboardType = KeyboardType.Decimal,
+                                                                                imeAction = ImeAction.Next
                                                                         ),
-                                                                keyboardActions =
-                                                                        KeyboardActions(
-                                                                                onNext = {
-                                                                                        nameFocusRequester
-                                                                                                .requestFocus()
-                                                                                }
-                                                                        ),
+                                                                keyboardActions = KeyboardActions(onNext = { nameFocusRequester.requestFocus() }),
                                                                 singleLine = true,
-                                                                cursorBrush =
-                                                                        SolidColor(
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .primary
-                                                                        ),
+                                                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                                                                 modifier =
                                                                         Modifier.weight(1f)
-                                                                                .focusRequester(
-                                                                                        amountFocusRequester
-                                                                                ),
+                                                                                .focusRequester(amountFocusRequester),
                                                                 decorationBox = { innerTextField ->
                                                                         if (amount.isEmpty()) {
                                                                                 Text(
                                                                                         text = "0",
-                                                                                        style =
-                                                                                                amountTextStyle,
-                                                                                        color =
-                                                                                                MaterialTheme
-                                                                                                        .colorScheme
-                                                                                                        .onSurfaceVariant
+                                                                                        style = amountTextStyle,
+                                                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                                                                 )
                                                                         }
                                                                         innerTextField()
@@ -538,22 +475,11 @@ fun AddTransactionScreen(
                                 Card(
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(24.dp),
-                                        colors =
-                                                CardDefaults.cardColors(
-                                                        containerColor =
-                                                                MaterialTheme.colorScheme
-                                                                        .surfaceVariant.copy(
-                                                                                alpha = 0.5f
-                                                                        )
-                                                )
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                 ) {
                                         Row(
-                                                modifier =
-                                                        Modifier.fillMaxWidth()
-                                                                .padding(
-                                                                        horizontal = 16.dp,
-                                                                        vertical = 0.dp
-                                                                ),
+                                                modifier = Modifier.fillMaxWidth()
+                                                                .padding(horizontal = 16.dp, vertical = 0.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                         ) {
                                                 Icon(
@@ -566,16 +492,8 @@ fun AddTransactionScreen(
                                                         value = name,
                                                         onValueChange = { name = it },
                                                         placeholder = {
-                                                                Text(
-                                                                        "What was this for?",
-                                                                        color =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .onSurfaceVariant
-                                                                                        .copy(
-                                                                                                alpha =
-                                                                                                        0.6f
-                                                                                        )
+                                                                Text("What was this for?",
+                                                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                                                 )
                                                         },
                                                         modifier =
@@ -605,24 +523,14 @@ fun AddTransactionScreen(
                                 Card(
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(24.dp),
-                                        colors =
-                                                CardDefaults.cardColors(
-                                                        containerColor =
-                                                                MaterialTheme.colorScheme
-                                                                        .surfaceVariant.copy(
-                                                                                alpha = 0.4f
-                                                                        )
-                                                )
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                                 ) {
                                         Column(modifier = Modifier.fillMaxWidth()) {
                                                 // Header row
                                                 Row(
                                                         modifier =
                                                                 Modifier.fillMaxWidth()
-                                                                        .clickable {
-                                                                                categoryExpanded =
-                                                                                        !categoryExpanded
-                                                                        }
+                                                                        .clickable { categoryExpanded = !categoryExpanded }
                                                                         .padding(16.dp),
                                                         horizontalArrangement = Arrangement.SpaceBetween,
                                                         verticalAlignment = Alignment.CenterVertically
@@ -633,70 +541,33 @@ fun AddTransactionScreen(
                                                                 Icon(
                                                                         Icons.Filled.Category,
                                                                         contentDescription = null,
-                                                                        modifier =
-                                                                                Modifier.size(
-                                                                                        22.dp
-                                                                                ),
-                                                                        tint =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .primary
+                                                                        modifier = Modifier.size(22.dp),
+                                                                        tint = MaterialTheme.colorScheme.primary
                                                                 )
-                                                                Spacer(
-                                                                        modifier =
-                                                                                Modifier.width(
-                                                                                        10.dp
-                                                                                )
-                                                                )
+                                                                Spacer(modifier = Modifier.width(10.dp))
                                                                 Column {
                                                                         Text(
                                                                                 text = "Category",
                                                                                 style = MaterialTheme.typography.titleSmall,
                                                                                 fontWeight = FontWeight.Bold
                                                                         )
-                                                                        if (selectedCategory
-                                                                                        .isNotEmpty()
+                                                                        if (selectedCategory.isNotEmpty()
                                                                         ) {
                                                                                 Row(
-                                                                                        verticalAlignment =
-                                                                                                Alignment
-                                                                                                        .CenterVertically
+                                                                                        verticalAlignment = Alignment.CenterVertically
                                                                                 ) {
                                                                                         Icon(
-                                                                                                getCategoryIcon(
-                                                                                                        selectedCategory
-                                                                                                ),
-                                                                                                contentDescription =
-                                                                                                        null,
-                                                                                                modifier =
-                                                                                                        Modifier.size(
-                                                                                                                14.dp
-                                                                                                        ),
-                                                                                                tint =
-                                                                                                        getCategoryColor(
-                                                                                                                selectedCategory
-                                                                                                        )
+                                                                                                getCategoryIcon(selectedCategory),
+                                                                                                contentDescription = null,
+                                                                                                modifier = Modifier.size(14.dp),
+                                                                                                tint = getCategoryColor(selectedCategory)
                                                                                         )
-                                                                                        Spacer(
-                                                                                                modifier =
-                                                                                                        Modifier.width(
-                                                                                                                4.dp
-                                                                                                        )
-                                                                                        )
+                                                                                        Spacer(modifier = Modifier.width(4.dp))
                                                                                         Text(
-                                                                                                text =
-                                                                                                        selectedCategory,
-                                                                                                style =
-                                                                                                        MaterialTheme
-                                                                                                                .typography
-                                                                                                                .bodySmall,
-                                                                                                color =
-                                                                                                        getCategoryColor(
-                                                                                                                selectedCategory
-                                                                                                        ),
-                                                                                                fontWeight =
-                                                                                                        FontWeight
-                                                                                                                .SemiBold
+                                                                                                text = selectedCategory,
+                                                                                                style = MaterialTheme.typography.bodySmall,
+                                                                                                color = getCategoryColor(selectedCategory),
+                                                                                                fontWeight = FontWeight.SemiBold
                                                                                         )
                                                                                 }
                                                                         }
@@ -720,28 +591,13 @@ fun AddTransactionScreen(
                                                         Column(
                                                                 modifier =
                                                                         Modifier.fillMaxWidth()
-                                                                                .padding(
-                                                                                        start =
-                                                                                                16.dp,
-                                                                                        end = 16.dp,
-                                                                                        bottom =
-                                                                                                16.dp
-                                                                                )
+                                                                                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                                                         ) {
                                                                 @OptIn(ExperimentalLayoutApi::class)
                                                                 FlowRow(
-                                                                        modifier =
-                                                                                Modifier.fillMaxWidth(),
-                                                                        horizontalArrangement =
-                                                                                Arrangement
-                                                                                        .spacedBy(
-                                                                                                8.dp
-                                                                                        ),
-                                                                        verticalArrangement =
-                                                                                Arrangement
-                                                                                        .spacedBy(
-                                                                                                8.dp
-                                                                                        )
+                                                                        modifier = Modifier.fillMaxWidth(),
+                                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                                                 ) {
                                                                         categories.forEach {
                                                                                         category ->
@@ -751,88 +607,39 @@ fun AddTransactionScreen(
 
                                                                                 Box(
                                                                                         modifier =
-                                                                                                Modifier.clip(
-                                                                                                        RoundedCornerShape(
-                                                                                                                50.dp
-                                                                                                        )
-                                                                                                )
+                                                                                                Modifier.clip(RoundedCornerShape(50.dp))
                                                                                                         .then(
                                                                                                                 if (isSelected)
-                                                                                                                        Modifier.border(
-                                                                                                                                1.5.dp,
-                                                                                                                                chipColor,
-                                                                                                                                RoundedCornerShape(
-                                                                                                                                        50.dp
-                                                                                                                                )
-                                                                                                                        )
+                                                                                                                        Modifier.border(1.5.dp, chipColor, RoundedCornerShape(50.dp))
                                                                                                                 else
                                                                                                                         Modifier
                                                                                                         )
-                                                                                                        .background(
-                                                                                                                chipBg
-                                                                                                        )
+                                                                                                        .background(chipBg)
                                                                                                         .clickable {
                                                                                                                 selectedCategory =
-                                                                                                                        if (selectedCategory ==
-                                                                                                                                category
-                                                                                                                        )
+                                                                                                                        if (selectedCategory == category)
                                                                                                                                 ""
                                                                                                                         else
                                                                                                                                 category
                                                                                                         }
-                                                                                                        .padding(
-                                                                                                                horizontal =
-                                                                                                                        12.dp,
-                                                                                                                vertical =
-                                                                                                                        8.dp
-                                                                                                        )
+                                                                                                        .padding(horizontal = 12.dp, vertical = 8.dp)
                                                                                 ) {
                                                                                         Row(
-                                                                                                verticalAlignment =
-                                                                                                        Alignment
-                                                                                                                .CenterVertically,
-                                                                                                horizontalArrangement =
-                                                                                                        Arrangement
-                                                                                                                .spacedBy(
-                                                                                                                        6.dp
-                                                                                                                )
+                                                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                                                         ) {
                                                                                                 Icon(
-                                                                                                        getCategoryIcon(
-                                                                                                                category
-                                                                                                        ),
-                                                                                                        contentDescription =
-                                                                                                                null,
-                                                                                                        modifier =
-                                                                                                                Modifier.size(
-                                                                                                                        16.dp
-                                                                                                                ),
-                                                                                                        tint =
-                                                                                                                chipColor
+                                                                                                        getCategoryIcon(category),
+                                                                                                        contentDescription = null,
+                                                                                                        modifier = Modifier.size(16.dp),
+                                                                                                        tint = chipColor
                                                                                                 )
                                                                                                 Text(
-                                                                                                        text =
-                                                                                                                category,
-                                                                                                        style =
-                                                                                                                MaterialTheme
-                                                                                                                        .typography
-                                                                                                                        .labelMedium,
-                                                                                                        fontWeight =
-                                                                                                                if (isSelected)
-                                                                                                                        FontWeight
-                                                                                                                                .Bold
-                                                                                                                else
-                                                                                                                        FontWeight
-                                                                                                                                .Medium,
-                                                                                                        color =
-                                                                                                                if (isSelected)
-                                                                                                                        chipColor
-                                                                                                                else
-                                                                                                                        MaterialTheme
-                                                                                                                                .colorScheme
-                                                                                                                                .onSurface,
-                                                                                                        maxLines =
-                                                                                                                1
+                                                                                                        text = category,
+                                                                                                        style = MaterialTheme.typography.labelMedium,
+                                                                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                                                                        color = if (isSelected) chipColor else MaterialTheme.colorScheme.onSurface,
+                                                                                                        maxLines = 1
                                                                                                 )
                                                                                         }
                                                                                 }
@@ -876,169 +683,84 @@ fun AddTransactionScreen(
                                 Card(
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = RoundedCornerShape(24.dp),
-                                        colors =
-                                                CardDefaults.cardColors(
-                                                        containerColor =
-                                                                MaterialTheme.colorScheme
-                                                                        .surfaceVariant.copy(
-                                                                                alpha = 0.4f
-                                                                        )
-                                                )
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                                 ) {
                                         Column(modifier = Modifier.fillMaxWidth()) {
                                                 // Header row
                                                 Row(
                                                         modifier =
                                                                 Modifier.fillMaxWidth()
-                                                                        .clickable {
-                                                                                paymentExpanded =
-                                                                                        !paymentExpanded
-                                                                        }
+                                                                        .clickable { paymentExpanded = !paymentExpanded }
                                                                         .padding(16.dp),
-                                                        horizontalArrangement =
-                                                                Arrangement.SpaceBetween,
-                                                        verticalAlignment =
-                                                                Alignment.CenterVertically
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                         Row(
-                                                                verticalAlignment =
-                                                                        Alignment.CenterVertically
+                                                                verticalAlignment = Alignment.CenterVertically
                                                         ) {
                                                                 Icon(
                                                                         Icons.Filled.Payment,
                                                                         contentDescription = null,
-                                                                        modifier =
-                                                                                Modifier.size(
-                                                                                        22.dp
-                                                                                ),
-                                                                        tint =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .primary
+                                                                        modifier = Modifier.size(22.dp),
+                                                                        tint = MaterialTheme.colorScheme.primary
                                                                 )
-                                                                Spacer(
-                                                                        modifier =
-                                                                                Modifier.width(
-                                                                                        10.dp
-                                                                                )
-                                                                )
+                                                                Spacer(modifier = Modifier.width(10.dp))
                                                                 Column {
                                                                         Text(
-                                                                                text =
-                                                                                        "Payment Method",
-                                                                                style =
-                                                                                        MaterialTheme
-                                                                                                .typography
-                                                                                                .titleSmall,
-                                                                                fontWeight =
-                                                                                        FontWeight
-                                                                                                .Bold
+                                                                                text = "Payment Method",
+                                                                                style = MaterialTheme.typography.titleSmall,
+                                                                                fontWeight = FontWeight.Bold
                                                                         )
-                                                                        if (selectedPaymentMethod
-                                                                                        .isNotEmpty()
+                                                                        if (selectedPaymentMethod.isNotEmpty()
                                                                         ) {
-                                                                                val chipColor =
-                                                                                        getPaymentChipColor(
-                                                                                                selectedPaymentMethod
-                                                                                        )
+                                                                                val chipColor = getPaymentChipColor(selectedPaymentMethod)
                                                                                 Row(
-                                                                                        verticalAlignment =
-                                                                                                Alignment
-                                                                                                        .CenterVertically
+                                                                                        verticalAlignment = Alignment.CenterVertically
                                                                                 ) {
                                                                                         when {
-                                                                                                selectedPaymentMethod ==
-                                                                                                        "GPay" ->
+                                                                                                selectedPaymentMethod == "GPay" ->
                                                                                                         Image(
-                                                                                                                painter =
-                                                                                                                        painterResource(
-                                                                                                                                R.drawable
-                                                                                                                                        .gpay
-                                                                                                                        ),
-                                                                                                                contentDescription =
-                                                                                                                        "GPay",
-                                                                                                                modifier =
-                                                                                                                        Modifier.size(
-                                                                                                                                14.dp
-                                                                                                                        )
+                                                                                                                painter = painterResource(R.drawable.gpay),
+                                                                                                                contentDescription = "GPay",
+                                                                                                                modifier = Modifier.size(14.dp)
                                                                                                         )
-                                                                                                selectedPaymentMethod ==
-                                                                                                        "PhonePe" ->
+                                                                                                selectedPaymentMethod == "PhonePe" ->
                                                                                                         Image(
-                                                                                                                painter =
-                                                                                                                        painterResource(
-                                                                                                                                R.drawable
-                                                                                                                                        .phonepe
-                                                                                                                        ),
-                                                                                                                contentDescription =
-                                                                                                                        "PhonePe",
-                                                                                                                modifier =
-                                                                                                                        Modifier.size(
-                                                                                                                                14.dp
-                                                                                                                        )
+                                                                                                                painter = painterResource(R.drawable.phonepe),
+                                                                                                                contentDescription = "PhonePe",
+                                                                                                                modifier = Modifier.size(14.dp)
                                                                                                         )
-                                                                                                selectedPaymentMethod
-                                                                                                        .contains(
-                                                                                                                "•"
-                                                                                                        ) ->
+                                                                                                selectedPaymentMethod.contains("•") ->
                                                                                                         Icon(
-                                                                                                                Icons.Default
-                                                                                                                        .AccountBalance,
-                                                                                                                contentDescription =
-                                                                                                                        null,
-                                                                                                                modifier =
-                                                                                                                        Modifier.size(
-                                                                                                                                14.dp
-                                                                                                                        ),
-                                                                                                                tint =
-                                                                                                                        chipColor
+                                                                                                                Icons.Default.AccountBalance,
+                                                                                                                contentDescription = null,
+                                                                                                                modifier = Modifier.size(14.dp),
+                                                                                                                tint = chipColor
                                                                                                         )
                                                                                                 else ->
                                                                                                         Icon(
-                                                                                                                getPaymentIcon(
-                                                                                                                        selectedPaymentMethod
-                                                                                                                ),
-                                                                                                                contentDescription =
-                                                                                                                        null,
-                                                                                                                modifier =
-                                                                                                                        Modifier.size(
-                                                                                                                                14.dp
-                                                                                                                        ),
-                                                                                                                tint =
-                                                                                                                        chipColor
+                                                                                                                getPaymentIcon(selectedPaymentMethod),
+                                                                                                                contentDescription = null,
+                                                                                                                modifier = Modifier.size(14.dp),
+                                                                                                                tint = chipColor
                                                                                                         )
                                                                                         }
-                                                                                        Spacer(
-                                                                                                modifier =
-                                                                                                        Modifier.width(
-                                                                                                                4.dp
-                                                                                                        )
-                                                                                        )
+                                                                                        Spacer(modifier = Modifier.width(4.dp))
                                                                                         Text(
-                                                                                                text =
-                                                                                                        selectedPaymentMethod,
-                                                                                                style =
-                                                                                                        MaterialTheme
-                                                                                                                .typography
-                                                                                                                .bodySmall,
-                                                                                                color =
-                                                                                                        chipColor,
-                                                                                                fontWeight =
-                                                                                                        FontWeight
-                                                                                                                .SemiBold
+                                                                                                text = selectedPaymentMethod,
+                                                                                                style = MaterialTheme.typography.bodySmall,
+                                                                                                color = chipColor,
+                                                                                                fontWeight = FontWeight.SemiBold
                                                                                         )
                                                                                 }
                                                                         }
                                                                 }
                                                         }
                                                         Icon(
-                                                                if (paymentExpanded)
-                                                                        Icons.Filled.ExpandLess
+                                                                if (paymentExpanded) Icons.Filled.ExpandLess
                                                                 else Icons.Filled.ExpandMore,
                                                                 contentDescription = "Toggle",
-                                                                tint =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
+                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                 }
 
@@ -1049,30 +771,18 @@ fun AddTransactionScreen(
                                                         exit = shrinkVertically()
                                                 ) {
                                                         Column(
-                                                                modifier =
-                                                                        Modifier.fillMaxWidth()
+                                                                modifier = Modifier.fillMaxWidth()
                                                                                 .padding(
-                                                                                        start =
-                                                                                                16.dp,
+                                                                                        start = 16.dp,
                                                                                         end = 16.dp,
-                                                                                        bottom =
-                                                                                                16.dp
+                                                                                        bottom = 16.dp
                                                                                 )
                                                         ) {
                                                                 @OptIn(ExperimentalLayoutApi::class)
                                                                 FlowRow(
-                                                                        modifier =
-                                                                                Modifier.fillMaxWidth(),
-                                                                        horizontalArrangement =
-                                                                                Arrangement
-                                                                                        .spacedBy(
-                                                                                                8.dp
-                                                                                        ),
-                                                                        verticalArrangement =
-                                                                                Arrangement
-                                                                                        .spacedBy(
-                                                                                                8.dp
-                                                                                        )
+                                                                        modifier = Modifier.fillMaxWidth(),
+                                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                                        verticalArrangement = Arrangement.spacedBy(8.dp)
                                                                 ) {
                                                                         val allPaymentMethods =
                                                                                 remember(
@@ -1087,158 +797,78 @@ fun AddTransactionScreen(
                                                                                         base + customPaymentMethods.map { it.name }
                                                                                 }
                                                                         allPaymentMethods.forEach {
-                                                                                        method ->
-                                                                                val isSelected =
-                                                                                        selectedPaymentMethod ==
-                                                                                                method
-                                                                                val chipColor =
-                                                                                        getPaymentChipColor(
-                                                                                                method
-                                                                                        )
-                                                                                val chipBg =
-                                                                                        if (isSelected)
-                                                                                                chipColor
-                                                                                                        .copy(
-                                                                                                                alpha =
-                                                                                                                        0.12f
-                                                                                                        )
-                                                                                        else
-                                                                                                MaterialTheme
-                                                                                                        .colorScheme
-                                                                                                        .surface
+                                                                                method ->
+                                                                                val isSelected = selectedPaymentMethod == method
+                                                                                val chipColor = getPaymentChipColor(method)
+                                                                                val chipBg = if (isSelected) chipColor.copy(alpha = 0.12f)
+                                                                                        else MaterialTheme.colorScheme.surface
 
                                                                                 Box(
                                                                                         modifier =
-                                                                                                Modifier.clip(
-                                                                                                        RoundedCornerShape(
-                                                                                                                50.dp
-                                                                                                        )
-                                                                                                )
+                                                                                                Modifier.clip(RoundedCornerShape(50.dp))
                                                                                                         .then(
                                                                                                                 if (isSelected)
                                                                                                                         Modifier.border(
                                                                                                                                 1.5.dp,
                                                                                                                                 chipColor,
-                                                                                                                                RoundedCornerShape(
-                                                                                                                                        50.dp
-                                                                                                                                )
+                                                                                                                                RoundedCornerShape(50.dp)
                                                                                                                         )
                                                                                                                 else
                                                                                                                         Modifier
                                                                                                         )
-                                                                                                        .background(
-                                                                                                                chipBg
-                                                                                                        )
-                                                                                                        .clickable {
-                                                                                                                selectedPaymentMethod =
-                                                                                                                        method
-                                                                                                        }
-                                                                                                        .padding(
-                                                                                                                horizontal =
-                                                                                                                        12.dp,
-                                                                                                                vertical =
-                                                                                                                        8.dp
-                                                                                                        )
+                                                                                                        .background(chipBg)
+                                                                                                        .clickable { selectedPaymentMethod = method }
+                                                                                                        .padding(horizontal = 12.dp, vertical = 8.dp)
                                                                                 ) {
                                                                                         Row(
-                                                                                                verticalAlignment =
-                                                                                                        Alignment
-                                                                                                                .CenterVertically,
-                                                                                                horizontalArrangement =
-                                                                                                        Arrangement
-                                                                                                                .spacedBy(
-                                                                                                                        6.dp
-                                                                                                                )
+                                                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                                                                                         ) {
                                                                                                 when {
-                                                                                                        method ==
-                                                                                                                "GPay" ->
+                                                                                                        method == "GPay" ->
                                                                                                                 Image(
-                                                                                                                        painter =
-                                                                                                                                painterResource(
-                                                                                                                                        R.drawable
-                                                                                                                                                .gpay
-                                                                                                                                ),
-                                                                                                                        contentDescription =
-                                                                                                                                "GPay",
-                                                                                                                        modifier =
-                                                                                                                                Modifier.size(
-                                                                                                                                        16.dp
-                                                                                                                                )
+                                                                                                                        painter = painterResource(R.drawable.gpay),
+                                                                                                                        contentDescription = "GPay",
+                                                                                                                        modifier = Modifier.size(16.dp)
                                                                                                                 )
-                                                                                                        method ==
-                                                                                                                "PhonePe" ->
+                                                                                                        method == "PhonePe" ->
                                                                                                                 Image(
-                                                                                                                        painter =
-                                                                                                                                painterResource(
-                                                                                                                                        R.drawable
-                                                                                                                                                .phonepe
-                                                                                                                                ),
-                                                                                                                        contentDescription =
-                                                                                                                                "PhonePe",
-                                                                                                                        modifier =
-                                                                                                                                Modifier.size(
-                                                                                                                                        16.dp
-                                                                                                                                )
+                                                                                                                        painter = painterResource(R.drawable.phonepe),
+                                                                                                                        contentDescription = "PhonePe",
+                                                                                                                        modifier = Modifier.size(16.dp)
                                                                                                                 )
-                                                                                                        method.contains(
-                                                                                                                "•"
-                                                                                                        ) ->
+                                                                                                        method.contains("•") ->
                                                                                                                 Icon(
-                                                                                                                        Icons.Default
-                                                                                                                                .AccountBalance,
-                                                                                                                        contentDescription =
-                                                                                                                                null,
-                                                                                                                        modifier =
-                                                                                                                                Modifier.size(
-                                                                                                                                        16.dp
-                                                                                                                                ),
+                                                                                                                        Icons.Default.AccountBalance,
+                                                                                                                        contentDescription = null,
+                                                                                                                        modifier = Modifier.size(16.dp),
                                                                                                                         tint =
                                                                                                                                 if (isSelected)
                                                                                                                                         chipColor
                                                                                                                                 else
-                                                                                                                                        MaterialTheme
-                                                                                                                                                .colorScheme
-                                                                                                                                                .onSurfaceVariant
+                                                                                                                                        MaterialTheme.colorScheme.onSurfaceVariant
                                                                                                                 )
                                                                                                         else ->
-                                                                                                                Icon(
-                                                                                                                        getPaymentIcon(
-                                                                                                                                method
-                                                                                                                        ),
-                                                                                                                        contentDescription =
-                                                                                                                                null,
-                                                                                                                        modifier =
-                                                                                                                                Modifier.size(
-                                                                                                                                        16.dp
-                                                                                                                                ),
-                                                                                                                        tint =
-                                                                                                                                chipColor
+                                                                                                                Icon(getPaymentIcon(method),
+                                                                                                                        contentDescription = null,
+                                                                                                                        modifier = Modifier.size(16.dp),
+                                                                                                                        tint = chipColor
                                                                                                                 )
                                                                                                 }
                                                                                                 Text(
-                                                                                                        text =
-                                                                                                                method,
-                                                                                                        style =
-                                                                                                                MaterialTheme
-                                                                                                                        .typography
-                                                                                                                        .labelMedium,
+                                                                                                        text = method,
+                                                                                                        style = MaterialTheme.typography.labelMedium,
                                                                                                         fontWeight =
                                                                                                                 if (isSelected)
-                                                                                                                        FontWeight
-                                                                                                                                .Bold
+                                                                                                                        FontWeight.Bold
                                                                                                                 else
-                                                                                                                        FontWeight
-                                                                                                                                .Medium,
+                                                                                                                        FontWeight.Medium,
                                                                                                         color =
                                                                                                                 if (isSelected)
                                                                                                                         chipColor
                                                                                                                 else
-                                                                                                                        MaterialTheme
-                                                                                                                                .colorScheme
-                                                                                                                                .onSurface,
-                                                                                                        maxLines =
-                                                                                                                1
+                                                                                                                        MaterialTheme.colorScheme.onSurface,
+                                                                                                        maxLines = 1
                                                                                                 )
                                                                                         }
                                                                                 }
@@ -1285,14 +915,7 @@ fun AddTransactionScreen(
                                                         .clip(RoundedCornerShape(24.dp))
                                                         .clickable { showDatePicker = true },
                                         shape = RoundedCornerShape(24.dp),
-                                        colors =
-                                                CardDefaults.cardColors(
-                                                        containerColor =
-                                                                MaterialTheme.colorScheme
-                                                                        .surfaceVariant.copy(
-                                                                                alpha = 0.4f
-                                                                        )
-                                                )
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                                 ) {
                                         Row(
                                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -1300,62 +923,41 @@ fun AddTransactionScreen(
                                                 verticalAlignment = Alignment.CenterVertically
                                         ) {
                                                 Row(
-                                                        verticalAlignment =
-                                                                Alignment.CenterVertically
+                                                        verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                         Icon(
                                                                 Icons.Filled.CalendarToday,
                                                                 contentDescription = null,
                                                                 modifier = Modifier.size(22.dp),
-                                                                tint =
-                                                                        MaterialTheme.colorScheme
-                                                                                .primary
+                                                                tint = MaterialTheme.colorScheme.primary
                                                         )
                                                         Spacer(modifier = Modifier.width(10.dp))
                                                         Text(
                                                                 text = "Date",
-                                                                style =
-                                                                        MaterialTheme.typography
-                                                                                .titleSmall,
+                                                                style = MaterialTheme.typography.titleSmall,
                                                                 fontWeight = FontWeight.Bold
                                                         )
                                                 }
 
                                                 Row(
-                                                        verticalAlignment =
-                                                                Alignment.CenterVertically
+                                                        verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                         Text(
                                                                 text =
                                                                         run {
-                                                                                val today =
-                                                                                        Calendar.getInstance()
+                                                                                val today = Calendar.getInstance()
                                                                                 val isToday =
-                                                                                        selectedDate
-                                                                                                .get(
-                                                                                                        Calendar.YEAR
-                                                                                                ) ==
-                                                                                                today.get(
-                                                                                                        Calendar.YEAR
-                                                                                                ) &&
-                                                                                                selectedDate
-                                                                                                        .get(
-                                                                                                                Calendar.DAY_OF_YEAR
-                                                                                                        ) ==
-                                                                                                today.get(
-                                                                                                        Calendar.DAY_OF_YEAR
-                                                                                                )
+                                                                                        selectedDate.get(Calendar.YEAR) ==
+                                                                                                today.get(Calendar.YEAR) &&
+                                                                                                selectedDate.get(Calendar.DAY_OF_YEAR) ==
+                                                                                                today.get(Calendar.DAY_OF_YEAR)
                                                                                 if (isToday)
                                                                                         "Today, ${timeFormat.format(selectedDate.time)}"
                                                                                 else
                                                                                         "${dateFormat.format(selectedDate.time)}, ${timeFormat.format(selectedDate.time)}"
                                                                         },
-                                                                style =
-                                                                        MaterialTheme.typography
-                                                                                .bodySmall,
-                                                                color =
-                                                                        MaterialTheme.colorScheme
-                                                                                .primary,
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = MaterialTheme.colorScheme.primary,
                                                                 fontWeight = FontWeight.SemiBold
                                                         )
                                                         Spacer(modifier = Modifier.width(4.dp))
@@ -1363,9 +965,7 @@ fun AddTransactionScreen(
                                                                 Icons.Filled.ChevronRight,
                                                                 contentDescription = null,
                                                                 modifier = Modifier.size(18.dp),
-                                                                tint =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
+                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                 }
                                         }
@@ -1380,15 +980,7 @@ fun AddTransactionScreen(
                                         Modifier.align(Alignment.BottomCenter)
                                                 .fillMaxWidth()
                                                 .height(50.dp)
-                                                .background(
-                                                        Brush.verticalGradient(
-                                                                colors =
-                                                                        listOf(
-                                                                                Color.Transparent,
-                                                                                surfaceColor
-                                                                        )
-                                                        )
-                                                )
+                                                .background(Brush.verticalGradient(colors = listOf(Color.Transparent, surfaceColor)))
                         )
                 }
         }
@@ -1469,27 +1061,15 @@ fun AddTransactionScreen(
                                 )
                         },
                         title = { Text("Delete Transaction", fontWeight = FontWeight.Bold) },
-                        text = {
-                                Text(
-                                        "Are you sure you want to delete this transaction? This cannot be undone."
-                                )
-                        },
+                        text = { Text("Are you sure you want to delete this transaction? This cannot be undone.") },
                         confirmButton = {
                                 Button(
                                         onClick = {
-                                                currentTransactionId?.let { id ->
-                                                        viewModel.deleteTransactionsByIds(
-                                                                listOf(id)
-                                                        )
-                                                }
+                                                currentTransactionId?.let { id -> viewModel.deleteTransactionsByIds(listOf(id)) }
                                                 showDeleteConfirmDialog = false
                                                 onBack()
                                         },
-                                        colors =
-                                                ButtonDefaults.buttonColors(
-                                                        containerColor =
-                                                                MaterialTheme.colorScheme.error
-                                                )
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                                 ) { Text("Delete", fontWeight = FontWeight.Bold) }
                         },
                         dismissButton = {
