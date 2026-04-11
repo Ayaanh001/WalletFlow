@@ -251,9 +251,6 @@ fun CategoryBreakdownScreen(
 
     // ── Scroll state ──────────────────────────────────────────────────────────
     val listState = rememberLazyListState()
-    // Trigger once the amount text has scrolled past the top bar.
-    // Hero layout: padding-top(24) + label row(~20) + spacer(6) + displaySmall amount(~52) = ~102dp.
-    // We use 100dp so the top bar text appears right as the hero amount disappears.
     val density = androidx.compose.ui.platform.LocalDensity.current
     val heroAmountThresholdPx = remember(density) {
         with(density) { 100.dp.roundToPx() }
@@ -501,7 +498,7 @@ private fun TabSwitcher(
                     Text(
                         text = tabLabel,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Black,
                         color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (count > 0) {
@@ -512,7 +509,7 @@ private fun TabSwitcher(
                             Text(
                                 text = "$count",
                                 style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Black,
                                 color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                             )
