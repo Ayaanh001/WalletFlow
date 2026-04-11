@@ -1,4 +1,4 @@
-# WalletFlow - Smart SMS & Expense Tracker
+# WalletFlow
 
 An elegant, secure, and automated Android application that scans banking SMS messages to create a seamless transaction passbook. Built with modern Android technologies including Jetpack Compose and Room.
 
