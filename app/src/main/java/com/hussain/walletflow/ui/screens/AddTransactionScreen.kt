@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -297,7 +298,7 @@ fun AddTransactionScreen(
                                                         }
                                                 },
                                                 modifier = Modifier.weight(0.5f),
-                                                shape = RoundedCornerShape(16.dp),
+                                                shape = RoundedCornerShape(50.dp),
                                                 contentPadding = PaddingValues(vertical = 14.dp)
                                         ) {
                                                 Icon(
@@ -320,14 +321,9 @@ fun AddTransactionScreen(
                                                         }
                                                 },
                                                 modifier = Modifier.weight(0.5f),
-                                                shape = RoundedCornerShape(16.dp),
+                                                shape = RoundedCornerShape(50.dp),
                                                 contentPadding = PaddingValues(vertical = 14.dp),
-                                                colors =
-                                                        ButtonDefaults.buttonColors(
-                                                                containerColor =
-                                                                        MaterialTheme.colorScheme
-                                                                                .primary
-                                                        )
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                                         ) {
                                                 Icon(
                                                         Icons.Filled.Save,
@@ -356,7 +352,7 @@ fun AddTransactionScreen(
                                 // ─── Expense / Income Tab Switcher ───
                                 Card(
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = RoundedCornerShape(50.dp),
                                         colors =
                                                 CardDefaults.cardColors(
                                                         containerColor =
@@ -371,8 +367,7 @@ fun AddTransactionScreen(
                                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                                         ) {
                                                 listOf(
-                                                        TransactionType.EXPENSE to
-                                                                "Expense",
+                                                        TransactionType.EXPENSE to "Expense",
                                                         TransactionType.INCOME to "Income"
                                                 )
                                                         .forEach { (type, label) ->
@@ -383,12 +378,11 @@ fun AddTransactionScreen(
                                                                                 Modifier.weight(1f)
                                                                                         .clip(
                                                                                                 RoundedCornerShape(
-                                                                                                        12.dp
+                                                                                                        50.dp
                                                                                                 )
                                                                                         )
                                                                                         .background(
-                                                                                                if (isSelected
-                                                                                                )
+                                                                                                if (isSelected)
                                                                                                         MaterialTheme
                                                                                                                 .colorScheme
                                                                                                                 .primary
@@ -418,37 +412,15 @@ fun AddTransactionScreen(
                                                                                                                         ?: ""
                                                                                                 }
                                                                                         }
-                                                                                        .padding(
-                                                                                                vertical =
-                                                                                                        12.dp
-                                                                                        ),
-                                                                        contentAlignment =
-                                                                                Alignment.Center
+                                                                                        .padding(vertical = 12.dp),
+                                                                        contentAlignment = Alignment.Center
                                                                 ) {
                                                                         Text(
                                                                                 text = label,
-                                                                                fontWeight =
-                                                                                        if (isSelected
-                                                                                        )
-                                                                                                FontWeight
-                                                                                                        .Bold
-                                                                                        else
-                                                                                                FontWeight
-                                                                                                        .Medium,
-                                                                                color =
-                                                                                        if (isSelected
-                                                                                        )
-                                                                                                MaterialTheme
-                                                                                                        .colorScheme
-                                                                                                        .onPrimary
-                                                                                        else
-                                                                                                MaterialTheme
-                                                                                                        .colorScheme
-                                                                                                        .onSurfaceVariant,
-                                                                                style =
-                                                                                        MaterialTheme
-                                                                                                .typography
-                                                                                                .titleSmall
+                                                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Black,
+                                                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                                                                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                                                style = MaterialTheme.typography.titleSmall
                                                                         )
                                                                 }
                                                         }
@@ -565,7 +537,7 @@ fun AddTransactionScreen(
                                 // ─── Name / "What was this for?" ───
                                 Card(
                                         modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = RoundedCornerShape(24.dp),
                                         colors =
                                                 CardDefaults.cardColors(
                                                         containerColor =
@@ -606,41 +578,23 @@ fun AddTransactionScreen(
                                                                                         )
                                                                 )
                                                         },
-                                                        //
-                                                        //      singleLine = true,
-                                                        //
-                                                        //      maxLines = 2,
                                                         modifier =
                                                                 Modifier.weight(1f)
-                                                                        .focusRequester(
-                                                                                nameFocusRequester
-                                                                        )
-                                                                        .offset(
-                                                                                x = (-4).dp
-                                                                        ), // compensate TextField's
-                                                        // internal start padding
+                                                                        .focusRequester(nameFocusRequester)
+                                                                        .offset(x = (-4).dp),
                                                         colors =
                                                                 TextFieldDefaults.colors(
-                                                                        focusedContainerColor =
-                                                                                Color.Transparent,
-                                                                        unfocusedContainerColor =
-                                                                                Color.Transparent,
-                                                                        focusedIndicatorColor =
-                                                                                Color.Transparent,
-                                                                        unfocusedIndicatorColor =
-                                                                                Color.Transparent
+                                                                        focusedContainerColor = Color.Transparent,
+                                                                        unfocusedContainerColor = Color.Transparent,
+                                                                        focusedIndicatorColor = Color.Transparent,
+                                                                        unfocusedIndicatorColor = Color.Transparent
                                                                 ),
                                                         keyboardOptions =
                                                                 KeyboardOptions(
-                                                                        imeAction = ImeAction.Done
+                                                                        imeAction = ImeAction.Done,
+                                                                        capitalization = KeyboardCapitalization.Sentences
                                                                 ),
-                                                        keyboardActions =
-                                                                KeyboardActions(
-                                                                        onDone = {
-                                                                                keyboardController
-                                                                                        ?.hide()
-                                                                        }
-                                                                )
+                                                        keyboardActions = KeyboardActions(onDone = { keyboardController?.hide() })
                                                 )
                                         }
                                 }
@@ -650,7 +604,7 @@ fun AddTransactionScreen(
                                 // ─── Category Section (collapsible card) ───
                                 Card(
                                         modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = RoundedCornerShape(24.dp),
                                         colors =
                                                 CardDefaults.cardColors(
                                                         containerColor =
@@ -670,14 +624,11 @@ fun AddTransactionScreen(
                                                                                         !categoryExpanded
                                                                         }
                                                                         .padding(16.dp),
-                                                        horizontalArrangement =
-                                                                Arrangement.SpaceBetween,
-                                                        verticalAlignment =
-                                                                Alignment.CenterVertically
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                         Row(
-                                                                verticalAlignment =
-                                                                        Alignment.CenterVertically
+                                                                verticalAlignment = Alignment.CenterVertically
                                                         ) {
                                                                 Icon(
                                                                         Icons.Filled.Category,
@@ -700,13 +651,8 @@ fun AddTransactionScreen(
                                                                 Column {
                                                                         Text(
                                                                                 text = "Category",
-                                                                                style =
-                                                                                        MaterialTheme
-                                                                                                .typography
-                                                                                                .titleSmall,
-                                                                                fontWeight =
-                                                                                        FontWeight
-                                                                                                .Bold
+                                                                                style = MaterialTheme.typography.titleSmall,
+                                                                                fontWeight = FontWeight.Bold
                                                                         )
                                                                         if (selectedCategory
                                                                                         .isNotEmpty()
@@ -761,9 +707,7 @@ fun AddTransactionScreen(
                                                                         Icons.Filled.ExpandLess
                                                                 else Icons.Filled.ExpandMore,
                                                                 contentDescription = "Toggle",
-                                                                tint =
-                                                                        MaterialTheme.colorScheme
-                                                                                .onSurfaceVariant
+                                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                 }
 
@@ -784,7 +728,6 @@ fun AddTransactionScreen(
                                                                                                 16.dp
                                                                                 )
                                                         ) {
-                                                                // FlowRow wraps chips naturally
                                                                 @OptIn(ExperimentalLayoutApi::class)
                                                                 FlowRow(
                                                                         modifier =
@@ -802,41 +745,24 @@ fun AddTransactionScreen(
                                                                 ) {
                                                                         categories.forEach {
                                                                                         category ->
-                                                                                val isSelected =
-                                                                                        selectedCategory ==
-                                                                                                category
-                                                                                val chipColor =
-                                                                                        getCategoryColor(
-                                                                                                category
-                                                                                        )
-                                                                                val chipBg =
-                                                                                        if (isSelected
-                                                                                        )
-                                                                                                chipColor
-                                                                                                        .copy(
-                                                                                                                alpha =
-                                                                                                                        0.1f
-                                                                                                        )
-                                                                                        else
-                                                                                                MaterialTheme
-                                                                                                        .colorScheme
-                                                                                                        .surface
+                                                                                val isSelected = selectedCategory == category
+                                                                                val chipColor = getCategoryColor(category)
+                                                                                val chipBg = if (isSelected) chipColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
 
                                                                                 Box(
                                                                                         modifier =
                                                                                                 Modifier.clip(
                                                                                                         RoundedCornerShape(
-                                                                                                                10.dp
+                                                                                                                50.dp
                                                                                                         )
                                                                                                 )
                                                                                                         .then(
-                                                                                                                if (isSelected
-                                                                                                                )
+                                                                                                                if (isSelected)
                                                                                                                         Modifier.border(
                                                                                                                                 1.5.dp,
                                                                                                                                 chipColor,
                                                                                                                                 RoundedCornerShape(
-                                                                                                                                        10.dp
+                                                                                                                                        50.dp
                                                                                                                                 )
                                                                                                                         )
                                                                                                                 else
@@ -858,7 +784,7 @@ fun AddTransactionScreen(
                                                                                                                 horizontal =
                                                                                                                         12.dp,
                                                                                                                 vertical =
-                                                                                                                        10.dp
+                                                                                                                        8.dp
                                                                                                         )
                                                                                 ) {
                                                                                         Row(
@@ -892,16 +818,14 @@ fun AddTransactionScreen(
                                                                                                                         .typography
                                                                                                                         .labelMedium,
                                                                                                         fontWeight =
-                                                                                                                if (isSelected
-                                                                                                                )
+                                                                                                                if (isSelected)
                                                                                                                         FontWeight
                                                                                                                                 .Bold
                                                                                                                 else
                                                                                                                         FontWeight
                                                                                                                                 .Medium,
                                                                                                         color =
-                                                                                                                if (isSelected
-                                                                                                                )
+                                                                                                                if (isSelected)
                                                                                                                         chipColor
                                                                                                                 else
                                                                                                                         MaterialTheme
@@ -913,14 +837,14 @@ fun AddTransactionScreen(
                                                                                         }
                                                                                 }
                                                                         }
-                                                                        // ── "+ New" chip (inside FlowRow, flows with other chips) ──
+                                                                        // "+ New" chip
                                                                         Box(
                                                                                 modifier = Modifier
-                                                                                        .clip(RoundedCornerShape(10.dp))
+                                                                                        .clip(RoundedCornerShape(50.dp))
                                                                                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                                                                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                                                                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
                                                                                         .clickable { showNewCategoryDialog = true }
-                                                                                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                                                                                        .padding(horizontal = 12.dp, vertical = 8.dp)
                                                                         ) {
                                                                                 Row(
                                                                                         verticalAlignment = Alignment.CenterVertically,
@@ -951,7 +875,7 @@ fun AddTransactionScreen(
                                 // ─── Payment Method Section (collapsible card) ───
                                 Card(
                                         modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = RoundedCornerShape(24.dp),
                                         colors =
                                                 CardDefaults.cardColors(
                                                         containerColor =
@@ -1170,12 +1094,9 @@ fun AddTransactionScreen(
                                                                                 val chipColor =
                                                                                         getPaymentChipColor(
                                                                                                 method
-                                                                                        ) // ←
-                                                                                // define
-                                                                                // FIRST
-                                                                                val chipBg =
-                                                                                        if (isSelected
                                                                                         )
+                                                                                val chipBg =
+                                                                                        if (isSelected)
                                                                                                 chipColor
                                                                                                         .copy(
                                                                                                                 alpha =
@@ -1190,17 +1111,16 @@ fun AddTransactionScreen(
                                                                                         modifier =
                                                                                                 Modifier.clip(
                                                                                                         RoundedCornerShape(
-                                                                                                                10.dp
+                                                                                                                50.dp
                                                                                                         )
                                                                                                 )
                                                                                                         .then(
-                                                                                                                if (isSelected
-                                                                                                                )
+                                                                                                                if (isSelected)
                                                                                                                         Modifier.border(
                                                                                                                                 1.5.dp,
                                                                                                                                 chipColor,
                                                                                                                                 RoundedCornerShape(
-                                                                                                                                        10.dp
+                                                                                                                                        50.dp
                                                                                                                                 )
                                                                                                                         )
                                                                                                                 else
@@ -1217,7 +1137,7 @@ fun AddTransactionScreen(
                                                                                                                 horizontal =
                                                                                                                         12.dp,
                                                                                                                 vertical =
-                                                                                                                        10.dp
+                                                                                                                        8.dp
                                                                                                         )
                                                                                 ) {
                                                                                         Row(
@@ -1274,8 +1194,7 @@ fun AddTransactionScreen(
                                                                                                                                         16.dp
                                                                                                                                 ),
                                                                                                                         tint =
-                                                                                                                                if (isSelected
-                                                                                                                                )
+                                                                                                                                if (isSelected)
                                                                                                                                         chipColor
                                                                                                                                 else
                                                                                                                                         MaterialTheme
@@ -1305,16 +1224,14 @@ fun AddTransactionScreen(
                                                                                                                         .typography
                                                                                                                         .labelMedium,
                                                                                                         fontWeight =
-                                                                                                                if (isSelected
-                                                                                                                )
+                                                                                                                if (isSelected)
                                                                                                                         FontWeight
                                                                                                                                 .Bold
                                                                                                                 else
                                                                                                                         FontWeight
                                                                                                                                 .Medium,
                                                                                                         color =
-                                                                                                                if (isSelected
-                                                                                                                )
+                                                                                                                if (isSelected)
                                                                                                                         chipColor
                                                                                                                 else
                                                                                                                         MaterialTheme
@@ -1329,11 +1246,11 @@ fun AddTransactionScreen(
                                                                         // ── "+ New" chip (inside FlowRow, flows with other chips) ──
                                                                         Box(
                                                                                 modifier = Modifier
-                                                                                        .clip(RoundedCornerShape(10.dp))
+                                                                                        .clip(RoundedCornerShape(50.dp))
                                                                                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                                                                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                                                                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
                                                                                         .clickable { showNewPaymentDialog = true }
-                                                                                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                                                                                        .padding(horizontal = 12.dp, vertical = 8.dp)
                                                                         ) {
                                                                                 Row(
                                                                                         verticalAlignment = Alignment.CenterVertically,
@@ -1365,9 +1282,9 @@ fun AddTransactionScreen(
                                 Card(
                                         modifier =
                                                 Modifier.fillMaxWidth()
-                                                        .clip(RoundedCornerShape(16.dp))
+                                                        .clip(RoundedCornerShape(24.dp))
                                                         .clickable { showDatePicker = true },
-                                        shape = RoundedCornerShape(16.dp),
+                                        shape = RoundedCornerShape(24.dp),
                                         colors =
                                                 CardDefaults.cardColors(
                                                         containerColor =
@@ -1477,8 +1394,6 @@ fun AddTransactionScreen(
         }
 
         // ── Full-screen "Create" page overlays ───────────────────────────────
-        // These slide in over the top of AddTransactionScreen like a sub-page,
-        // so they don't need their own nav route.
         if (showNewCategoryDialog) {
                 CreateCustomItemScreen(
                         isCategory = true,
@@ -1487,8 +1402,6 @@ fun AddTransactionScreen(
                                 TransactionCategories.INCOME_CATEGORIES +
                                 customCategories.map { it.name },
                         onConfirm = { itemName, iconKey, colorHex, itemType ->
-                                // Register immediately so the chip shows the right icon/color
-                                // before DataStore emits the updated list
                                 val newItem = CustomItem(itemName, iconKey, colorHex, itemType)
                                 registerCustomCategories(customCategories + newItem)
                                 selectedCategory = itemName
@@ -1507,7 +1420,6 @@ fun AddTransactionScreen(
                         existingNames = TransactionCategories.PAYMENT_METHODS +
                                 customPaymentMethods.map { it.name },
                         onConfirm = { itemName, iconKey, colorHex, itemType ->
-                                // Register immediately so the chip shows the right icon/color
                                 val newItem = CustomItem(itemName, iconKey, colorHex, itemType)
                                 registerCustomPaymentMethods(customPaymentMethods + newItem)
                                 selectedPaymentMethod = itemName
