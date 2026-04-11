@@ -55,15 +55,11 @@ class QuickAddActivity : ComponentActivity() {
         window.setBackgroundDrawableResource(android.R.color.transparent)
         window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         window.attributes = window.attributes.also { it.dimAmount = 0.6f }
-
-        // ── Add these two lines ──────────────────────────────────────────
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
-        // ────────────────────────────────────────────────────────────────
 
         val txId    = intent.getLongExtra(SmsNotificationHelper.EXTRA_TRANSACTION_ID, -1L)
         val notifId = intent.getIntExtra(SmsNotificationHelper.EXTRA_NOTIFICATION_ID, -1)
-        // ... rest unchanged
         setContent {
             TransactionTrackerTheme {
                 QuickAddSheet(
@@ -140,8 +136,8 @@ private fun QuickAddSheet(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()                                              // ← add
-                .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.92f)  // ← add
+                .wrapContentHeight()
+                .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.92f)
                 .clickable(enabled = false, onClick = {})
                 .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
             color = MaterialTheme.colorScheme.surface,
@@ -229,7 +225,7 @@ private fun QuickAddSheet(
                                 )
                             }
                             Surface(
-                                shape = RoundedCornerShape(8.dp),
+                                shape = RoundedCornerShape(50.dp),
                                 color = amtColor.copy(alpha = 0.15f)
                             ) {
                                 Text(
@@ -247,9 +243,9 @@ private fun QuickAddSheet(
                     // ── Remark ────────────────────────────────────────────────
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape    = RoundedCornerShape(16.dp),
+                        shape    = RoundedCornerShape(24.dp),
                         colors   = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                         )
                     ) {
                         Row(
@@ -288,7 +284,7 @@ private fun QuickAddSheet(
                     // ── Category card (collapsible) ───────────────────────────
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape    = RoundedCornerShape(16.dp),
+                        shape    = RoundedCornerShape(24.dp),
                         colors   = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                         )
@@ -361,10 +357,10 @@ private fun QuickAddSheet(
                                         val chipColor  = getCategoryColor(item)
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(10.dp))
+                                                .clip(RoundedCornerShape(50.dp))
                                                 .then(
                                                     if (isSelected)
-                                                        Modifier.border(1.5.dp, chipColor, RoundedCornerShape(10.dp))
+                                                        Modifier.border(1.5.dp, chipColor, RoundedCornerShape(50.dp))
                                                     else Modifier
                                                 )
                                                 .background(
@@ -407,7 +403,7 @@ private fun QuickAddSheet(
                     // ── Payment method card (collapsible) ─────────────────────
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape    = RoundedCornerShape(16.dp),
+                        shape    = RoundedCornerShape(24.dp),
                         colors   = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                         )
@@ -493,10 +489,10 @@ private fun QuickAddSheet(
                                         val chipColor  = getPaymentChipColor(method)
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(10.dp))
+                                                .clip(RoundedCornerShape(50.dp))
                                                 .then(
                                                     if (isSelected)
-                                                        Modifier.border(1.5.dp, chipColor, RoundedCornerShape(10.dp))
+                                                        Modifier.border(1.5.dp, chipColor, RoundedCornerShape(50.dp))
                                                     else Modifier
                                                 )
                                                 .background(
@@ -568,7 +564,7 @@ private fun QuickAddSheet(
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(52.dp),
-                        shape    = RoundedCornerShape(14.dp),
+                        shape    = RoundedCornerShape(50.dp),
                         enabled  = !isSaving
                     ) {
                         if (isSaving) {
@@ -587,7 +583,7 @@ private fun QuickAddSheet(
                     OutlinedButton(
                         onClick  = onCancel,
                         modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape    = RoundedCornerShape(14.dp)
+                        shape    = RoundedCornerShape(50.dp)
                     ) { Text("Cancel") }
 
                     Spacer(Modifier.height(16.dp))
