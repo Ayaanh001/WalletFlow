@@ -245,7 +245,7 @@ private fun ShortcutAddTransactionScreen(
                     OutlinedButton(
                         onClick = { if (saveTransaction()) resetForm() },
                         modifier = Modifier.weight(0.5f),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(50.dp),
                         contentPadding = PaddingValues(vertical = 14.dp)
                     ) {
                         Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -255,7 +255,7 @@ private fun ShortcutAddTransactionScreen(
                     Button(
                         onClick = { if (saveTransaction()) onDone() },
                         modifier = Modifier.weight(0.5f),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(50.dp),
                         contentPadding = PaddingValues(vertical = 14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -280,7 +280,7 @@ private fun ShortcutAddTransactionScreen(
                 // ─── Expense / Income Tab Switcher ───
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(50.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     )
@@ -295,7 +295,7 @@ private fun ShortcutAddTransactionScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .clip(RoundedCornerShape(50.dp))
                                         .background(
                                             if (isSelected) MaterialTheme.colorScheme.primary
                                             else Color.Transparent
@@ -390,7 +390,7 @@ private fun ShortcutAddTransactionScreen(
                 // ─── Name ───
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     )
@@ -432,7 +432,7 @@ private fun ShortcutAddTransactionScreen(
                 // ─── Category Section ───
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                     )
@@ -493,8 +493,8 @@ private fun ShortcutAddTransactionScreen(
                                             val chipColor = categoryColor(category)
                                             Box(
                                                 modifier = Modifier
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .then(if (isSelected) Modifier.border(1.5.dp, chipColor, RoundedCornerShape(10.dp)) else Modifier)
+                                                    .clip(RoundedCornerShape(50.dp))
+                                                    .then(if (isSelected) Modifier.border(1.5.dp, chipColor, RoundedCornerShape(50.dp)) else Modifier)
                                                     .background(if (isSelected) chipColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface)
                                                     .clickable { selectedCategory = if (selectedCategory == category) "" else category }
                                                     .padding(horizontal = 12.dp, vertical = 10.dp)
@@ -515,9 +515,9 @@ private fun ShortcutAddTransactionScreen(
                                     // + New chip
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(10.dp))
+                                            .clip(RoundedCornerShape(50.dp))
                                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
                                             .clickable { showNewCategoryDialog = true }
                                             .padding(horizontal = 12.dp, vertical = 10.dp)
                                     ) {
@@ -537,7 +537,7 @@ private fun ShortcutAddTransactionScreen(
                 // ─── Payment Method Section ───
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                     )
@@ -594,8 +594,8 @@ private fun ShortcutAddTransactionScreen(
                                             val chipColor = paymentColor(method)
                                             Box(
                                                 modifier = Modifier
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .then(if (isSelected) Modifier.border(1.5.dp, chipColor, RoundedCornerShape(10.dp)) else Modifier)
+                                                    .clip(RoundedCornerShape(50.dp))
+                                                    .then(if (isSelected) Modifier.border(1.5.dp, chipColor, RoundedCornerShape(50.dp)) else Modifier)
                                                     .background(if (isSelected) chipColor.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface)
                                                     .clickable { selectedPaymentMethod = method }
                                                     .padding(horizontal = 12.dp, vertical = 10.dp)
@@ -621,9 +621,9 @@ private fun ShortcutAddTransactionScreen(
                                     // + New chip
                                     Box(
                                         modifier = Modifier
-                                            .clip(RoundedCornerShape(10.dp))
+                                            .clip(RoundedCornerShape(50.dp))
                                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
                                             .clickable { showNewPaymentDialog = true }
                                             .padding(horizontal = 12.dp, vertical = 10.dp)
                                     ) {
@@ -642,8 +642,8 @@ private fun ShortcutAddTransactionScreen(
 
                 // ─── Date Section ───
                 Card(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable { showDatePicker = true },
-                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).clickable { showDatePicker = true },
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                     )
