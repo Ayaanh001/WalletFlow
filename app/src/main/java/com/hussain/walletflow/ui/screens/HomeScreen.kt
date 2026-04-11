@@ -320,6 +320,7 @@ fun HomeScreen(
                                                 ) {
                                                         Text(
                                                                 text = if (userName.isNotEmpty()) "Hi, $userName" else "Hi",
+                                                                modifier = Modifier.weight(1f),
                                                                 overflow = TextOverflow.Ellipsis,
                                                                 maxLines = 1,
                                                                 style = MaterialTheme.typography.titleLarge,
