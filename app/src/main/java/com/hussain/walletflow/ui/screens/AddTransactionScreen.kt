@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
@@ -1061,7 +1062,13 @@ fun AddTransactionScreen(
                                 )
                         },
                         title = { Text("Delete Transaction", fontWeight = FontWeight.Bold) },
-                        text = { Text("Are you sure you want to delete this transaction? This cannot be undone.") },
+                        text = {
+                                Text(
+                                        "Are you sure you want to delete this transaction? This cannot be undone.",
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                )
+                        },
                         confirmButton = {
                                 Button(
                                         onClick = {
