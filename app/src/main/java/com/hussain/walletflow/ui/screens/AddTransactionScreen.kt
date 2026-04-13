@@ -4,10 +4,13 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,7 +65,7 @@ import java.util.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AddTransactionScreen(
         viewModel: TransactionViewModel,
@@ -112,12 +115,18 @@ fun AddTransactionScreen(
         val customCategories by customItemsRepo.customCategoriesFlow.collectAsState(initial = emptyList())
         val customPaymentMethods by customItemsRepo.customPaymentMethodsFlow.collectAsState(initial = emptyList())
 
+        // Snackbar host state
+        val snackbarHostState = remember { SnackbarHostState() }
+
         // Keep IconUtils runtime maps in sync
         LaunchedEffect(customCategories) { registerCustomCategories(customCategories) }
         LaunchedEffect(customPaymentMethods) { registerCustomPaymentMethods(customPaymentMethods) }
 
         var showNewCategoryDialog by remember { mutableStateOf(false) }
         var showNewPaymentDialog  by remember { mutableStateOf(false) }
+
+        var categoryToDelete by remember { mutableStateOf<String?>(null) }
+        var paymentToDelete by remember { mutableStateOf<String?>(null) }
 
         val builtInCategories =
                 if (selectedType == TransactionType.INCOME) {
@@ -215,13 +224,18 @@ fun AddTransactionScreen(
                 bankAccountInfo = null
         }
 
-        // Intercept system back when create-new overlays are visible
-        BackHandler(enabled = showNewCategoryDialog || showNewPaymentDialog) {
-                showNewCategoryDialog = false
-                showNewPaymentDialog = false
+        // Intercept system back when create-new overlays are visible OR a delete icon is showing
+        BackHandler(enabled = showNewCategoryDialog || showNewPaymentDialog || categoryToDelete != null || paymentToDelete != null) {
+                if (showNewCategoryDialog) showNewCategoryDialog = false
+                else if (showNewPaymentDialog) showNewPaymentDialog = false
+                else {
+                    categoryToDelete = null
+                    paymentToDelete = null
+                }
         }
 
         Scaffold(
+                snackbarHost = { SnackbarHost(snackbarHostState) },
                 topBar = {
                         CenterAlignedTopAppBar(
                                 title = {
@@ -339,6 +353,13 @@ fun AddTransactionScreen(
                                         Modifier.fillMaxSize()
                                                 .verticalScroll(rememberScrollState())
                                                 .padding(horizontal = 16.dp)
+                                                .clickable(
+                                                    interactionSource = remember { MutableInteractionSource() },
+                                                    indication = null
+                                                ) {
+                                                    categoryToDelete = null
+                                                    paymentToDelete = null
+                                                }
                         ) {
                                 // ─── Expense / Income Tab Switcher ───
                                 Card(
@@ -531,7 +552,11 @@ fun AddTransactionScreen(
                                                 Row(
                                                         modifier =
                                                                 Modifier.fillMaxWidth()
-                                                                        .clickable { categoryExpanded = !categoryExpanded }
+                                                                        .clickable { 
+                                                                            categoryExpanded = !categoryExpanded 
+                                                                            categoryToDelete = null
+                                                                            paymentToDelete = null
+                                                                        }
                                                                         .padding(16.dp),
                                                         horizontalArrangement = Arrangement.SpaceBetween,
                                                         verticalAlignment = Alignment.CenterVertically
@@ -605,6 +630,7 @@ fun AddTransactionScreen(
                                                                                 val isSelected = selectedCategory == category
                                                                                 val chipColor = getCategoryColor(category)
                                                                                 val chipBg = if (isSelected) chipColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
+                                                                                val isCustom = customCategories.find { it.name == category }
 
                                                                                 Box(
                                                                                         modifier =
@@ -616,13 +642,17 @@ fun AddTransactionScreen(
                                                                                                                         Modifier
                                                                                                         )
                                                                                                         .background(chipBg)
-                                                                                                        .clickable {
-                                                                                                                selectedCategory =
-                                                                                                                        if (selectedCategory == category)
-                                                                                                                                ""
-                                                                                                                        else
-                                                                                                                                category
-                                                                                                        }
+                                                                                                        .combinedClickable(
+                                                                                                            onClick = {
+                                                                                                                selectedCategory = if (selectedCategory == category) "" else category
+                                                                                                                categoryToDelete = null
+                                                                                                            },
+                                                                                                            onLongClick = {
+                                                                                                                if (isCustom != null) {
+                                                                                                                    categoryToDelete = category
+                                                                                                                }
+                                                                                                            }
+                                                                                                        )
                                                                                                         .padding(horizontal = 12.dp, vertical = 8.dp)
                                                                                 ) {
                                                                                         Row(
@@ -642,6 +672,35 @@ fun AddTransactionScreen(
                                                                                                         color = if (isSelected) chipColor else MaterialTheme.colorScheme.onSurface,
                                                                                                         maxLines = 1
                                                                                                 )
+                                                                                                if (categoryToDelete == category) {
+                                                                                                    Icon(
+                                                                                                        Icons.Default.Delete,
+                                                                                                        contentDescription = "Delete",
+                                                                                                        modifier = Modifier
+                                                                                                            .size(18.dp)
+                                                                                                            .clickable {
+                                                                                                                coroutineScope.launch {
+                                                                                                                    val deletedItem = isCustom ?: return@launch
+                                                                                                                    customItemsRepo.removeCustomCategory(category)
+                                                                                                                    if (selectedCategory == category) selectedCategory = ""
+                                                                                                                    categoryToDelete = null
+                                                                                                                    
+                                                                                                                    val result = snackbarHostState.showSnackbar(
+                                                                                                                        message = "Category deleted",
+                                                                                                                        actionLabel = "Undo",
+                                                                                                                        duration = SnackbarDuration.Short
+                                                                                                                    )
+                                                                                                                    if (result == SnackbarResult.ActionPerformed) {
+                                                                                                                        customItemsRepo.addCustomCategory(deletedItem)
+                                                                                                                        // Manual sync to ensure UI updates immediately
+                                                                                                                        registerCustomCategories(customCategories + deletedItem)
+                                                                                                                        selectedCategory = deletedItem.name
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            },
+                                                                                                        tint = MaterialTheme.colorScheme.error
+                                                                                                    )
+                                                                                                }
                                                                                         }
                                                                                 }
                                                                         }
@@ -651,7 +710,11 @@ fun AddTransactionScreen(
                                                                                         .clip(RoundedCornerShape(50.dp))
                                                                                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                                                                                         .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
-                                                                                        .clickable { showNewCategoryDialog = true }
+                                                                                        .clickable { 
+                                                                                            showNewCategoryDialog = true 
+                                                                                            categoryToDelete = null
+                                                                                            paymentToDelete = null
+                                                                                        }
                                                                                         .padding(horizontal = 12.dp, vertical = 8.dp)
                                                                         ) {
                                                                                 Row(
@@ -691,7 +754,11 @@ fun AddTransactionScreen(
                                                 Row(
                                                         modifier =
                                                                 Modifier.fillMaxWidth()
-                                                                        .clickable { paymentExpanded = !paymentExpanded }
+                                                                        .clickable { 
+                                                                            paymentExpanded = !paymentExpanded 
+                                                                            categoryToDelete = null
+                                                                            paymentToDelete = null
+                                                                        }
                                                                         .padding(16.dp),
                                                         horizontalArrangement = Arrangement.SpaceBetween,
                                                         verticalAlignment = Alignment.CenterVertically
@@ -803,6 +870,7 @@ fun AddTransactionScreen(
                                                                                 val chipColor = getPaymentChipColor(method)
                                                                                 val chipBg = if (isSelected) chipColor.copy(alpha = 0.12f)
                                                                                         else MaterialTheme.colorScheme.surface
+                                                                                val isCustom = customPaymentMethods.find { it.name == method }
 
                                                                                 Box(
                                                                                         modifier =
@@ -818,7 +886,17 @@ fun AddTransactionScreen(
                                                                                                                         Modifier
                                                                                                         )
                                                                                                         .background(chipBg)
-                                                                                                        .clickable { selectedPaymentMethod = method }
+                                                                                                        .combinedClickable(
+                                                                                                            onClick = {
+                                                                                                                selectedPaymentMethod = method
+                                                                                                                paymentToDelete = null
+                                                                                                            },
+                                                                                                            onLongClick = {
+                                                                                                                if (isCustom != null) {
+                                                                                                                    paymentToDelete = method
+                                                                                                                }
+                                                                                                            }
+                                                                                                        )
                                                                                                         .padding(horizontal = 12.dp, vertical = 8.dp)
                                                                                 ) {
                                                                                         Row(
@@ -871,6 +949,35 @@ fun AddTransactionScreen(
                                                                                                                         MaterialTheme.colorScheme.onSurface,
                                                                                                         maxLines = 1
                                                                                                 )
+                                                                                                if (paymentToDelete == method) {
+                                                                                                    Icon(
+                                                                                                        Icons.Default.Delete,
+                                                                                                        contentDescription = "Delete",
+                                                                                                        modifier = Modifier
+                                                                                                            .size(18.dp)
+                                                                                                            .clickable {
+                                                                                                                coroutineScope.launch {
+                                                                                                                    val deletedItem = isCustom ?: return@launch
+                                                                                                                    customItemsRepo.removeCustomPaymentMethod(method)
+                                                                                                                    if (selectedPaymentMethod == method) selectedPaymentMethod = "Cash"
+                                                                                                                    paymentToDelete = null
+                                                                                                                    
+                                                                                                                    val result = snackbarHostState.showSnackbar(
+                                                                                                                        message = "Payment method deleted",
+                                                                                                                        actionLabel = "Undo",
+                                                                                                                        duration = SnackbarDuration.Short
+                                                                                                                    )
+                                                                                                                    if (result == SnackbarResult.ActionPerformed) {
+                                                                                                                        customItemsRepo.addCustomPaymentMethod(deletedItem)
+                                                                                                                        // Manual sync to ensure UI updates immediately
+                                                                                                                        registerCustomPaymentMethods(customPaymentMethods + deletedItem)
+                                                                                                                        selectedPaymentMethod = deletedItem.name
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            },
+                                                                                                        tint = MaterialTheme.colorScheme.error
+                                                                                                    )
+                                                                                                }
                                                                                         }
                                                                                 }
                                                                         }
@@ -880,7 +987,11 @@ fun AddTransactionScreen(
                                                                                         .clip(RoundedCornerShape(50.dp))
                                                                                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                                                                                         .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
-                                                                                        .clickable { showNewPaymentDialog = true }
+                                                                                        .clickable { 
+                                                                                            showNewPaymentDialog = true 
+                                                                                            categoryToDelete = null
+                                                                                            paymentToDelete = null
+                                                                                        }
                                                                                         .padding(horizontal = 12.dp, vertical = 8.dp)
                                                                         ) {
                                                                                 Row(
@@ -914,7 +1025,11 @@ fun AddTransactionScreen(
                                         modifier =
                                                 Modifier.fillMaxWidth()
                                                         .clip(RoundedCornerShape(24.dp))
-                                                        .clickable { showDatePicker = true },
+                                                        .clickable { 
+                                                            showDatePicker = true 
+                                                            categoryToDelete = null
+                                                            paymentToDelete = null
+                                                        },
                                         shape = RoundedCornerShape(24.dp),
                                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                                 ) {
