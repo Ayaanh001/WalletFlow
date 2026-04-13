@@ -141,6 +141,7 @@ fun HomeScreen(
         var isSelectionMode by remember { mutableStateOf(false) }
         // Use a SnapshotStateSet so Compose only recomposes items whose selection changed
         val selectedIds = remember { mutableStateSetOf<Long>() }
+        var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
         LaunchedEffect(isSelectionMode) { onSelectionModeChanged(isSelectionMode) }
 
@@ -304,9 +305,7 @@ fun HomeScreen(
                                                                 }
                                                         },
                                                         onDeleteSelected = {
-                                                                viewModel.deleteTransactionsByIds(selectedIds.toList())
-                                                                selectedIds.clear()
-                                                                isSelectionMode = false
+                                                                showDeleteConfirmDialog = true
                                                         },
                                                         onMoreSelected = { showBulkEditSheet = true }
                                                 )
@@ -750,6 +749,45 @@ fun HomeScreen(
                                 onBack = {
                                         showNewPaymentFromSheet = false
                                         showBulkEditSheet = true           // ← reopen sheet on back press
+                                }
+                        )
+                }
+
+                // Delete confirmation dialog
+                if (showDeleteConfirmDialog) {
+                        AlertDialog(
+                                onDismissRequest = { showDeleteConfirmDialog = false },
+                                icon = {
+                                        Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.error
+                                        )
+                                },
+                                title = { Text("Delete ${selectedIds.size} Transactions", fontWeight = FontWeight.Bold) },
+                                text = {
+                                        Text(
+                                                if (selectedIds.size > 1) "Are you sure you want to delete these transactions? This cannot be undone."
+                                                else "Are you sure you want to delete this transaction? This cannot be undone.",
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                },
+                                confirmButton = {
+                                        Button(
+                                                onClick = {
+                                                        viewModel.deleteTransactionsByIds(selectedIds.toList())
+                                                        selectedIds.clear()
+                                                        isSelectionMode = false
+                                                        showDeleteConfirmDialog = false
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                        ) { Text("Delete", fontWeight = FontWeight.Bold) }
+                                },
+                                dismissButton = {
+                                        OutlinedButton(onClick = { showDeleteConfirmDialog = false }) {
+                                                Text("Cancel")
+                                        }
                                 }
                         )
                 }
