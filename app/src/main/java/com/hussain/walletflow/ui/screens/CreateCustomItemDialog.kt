@@ -1,5 +1,6 @@
 package com.hussain.walletflow.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -466,6 +467,11 @@ fun CreateCustomItemScreen(
             { nameError = "\"$t\" already exists"; false }
             else -> { nameError = null; true }
         }
+    }
+
+    // Intercept back button when icon picker is visible
+    BackHandler(enabled = showIconPicker) {
+        showIconPicker = false
     }
 
     // ── Icon Picker full-screen overlay ──────────────────────────────────────
