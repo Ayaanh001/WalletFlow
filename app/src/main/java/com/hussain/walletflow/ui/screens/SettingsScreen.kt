@@ -127,7 +127,10 @@ fun SettingsScreen(
                 scope = scope
             )
 
-            SettingsDebugSection()
+            SettingsDebugSection(
+                prefsRepository = prefsRepository,
+                scope = scope
+            )
 
             SettingsSectionHeader("Preferences")
             SettingsCurrencyCard(selectedCurrency) { showCurrencyDialog = true }

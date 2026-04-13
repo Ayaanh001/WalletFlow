@@ -59,6 +59,7 @@ import com.hussain.walletflow.data.TransactionType
 import com.hussain.walletflow.data.UserPreferencesRepository
 import com.hussain.walletflow.notification.SmsNotificationHelper
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
@@ -179,7 +180,10 @@ fun SettingsProfileSection(
 }
 
 @Composable
-fun SettingsDebugSection() {
+fun SettingsDebugSection(
+    prefsRepository: UserPreferencesRepository,
+    scope: CoroutineScope
+) {
     val context = LocalContext.current
     SettingsSectionHeader("Debug", Modifier.padding(top = 4.dp))
     Card(
@@ -227,8 +231,10 @@ fun SettingsDebugSection() {
 
             OutlinedButton(
                 onClick = {
-                    val fakeExpense =
-                        Transaction(
+                    scope.launch {
+                        val currencyCode = prefsRepository.currencyFlow.first()
+                        val currencySymbol = CurrencyData.currencies.find { it.code == currencyCode }?.symbol ?: currencyCode
+                        val fakeExpense = Transaction(
                             id = 99991L,
                             date = System.currentTimeMillis(),
                             amount = 1234.50,
@@ -242,20 +248,23 @@ fun SettingsDebugSection() {
                             paymentMethod = "",
                             isAddedToMonthly = false
                         )
-                    SmsNotificationHelper.postTransactionNotification(context, fakeExpense)
+                        SmsNotificationHelper.postTransactionNotification(context, fakeExpense, currencySymbol)
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("🔴  Test Expense Notification  (₹1,234.50 debited)")
+                Text("🔴  Test Expense Notification  (1,234.50 debited)")
             }
 
             Spacer(Modifier.height(8.dp))
 
             OutlinedButton(
                 onClick = {
-                    val fakeIncome =
-                        Transaction(
+                    scope.launch {
+                        val currencyCode = prefsRepository.currencyFlow.first()
+                        val currencySymbol = CurrencyData.currencies.find { it.code == currencyCode }?.symbol ?: currencyCode
+                        val fakeIncome = Transaction(
                             id = 99992L,
                             date = System.currentTimeMillis(),
                             amount = 50000.00,
@@ -269,12 +278,13 @@ fun SettingsDebugSection() {
                             paymentMethod = "",
                             isAddedToMonthly = false
                         )
-                    SmsNotificationHelper.postTransactionNotification(context, fakeIncome)
+                        SmsNotificationHelper.postTransactionNotification(context, fakeIncome, currencySymbol)
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("🟢  Test Income Notification  (₹50,000.00 credited)")
+                Text("🟢  Test Income Notification  (50,000.00 credited)")
             }
         }
     }

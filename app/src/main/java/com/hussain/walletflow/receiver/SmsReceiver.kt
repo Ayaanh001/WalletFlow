@@ -5,13 +5,17 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
 import android.util.Log
+import com.hussain.walletflow.data.CurrencyData
 import com.hussain.walletflow.data.TransactionDatabase
+import com.hussain.walletflow.data.UserPreferencesRepository
 import com.hussain.walletflow.notification.SmsNotificationHelper
 import com.hussain.walletflow.utils.SmsParser
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 
 class SmsReceiver : BroadcastReceiver() {
@@ -23,6 +27,11 @@ class SmsReceiver : BroadcastReceiver() {
 
         val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
         if (messages.isNullOrEmpty()) return
+
+        val currencySymbol = runBlocking {
+            UserPreferencesRepository(context).currencyFlow.first()
+                .let { code -> CurrencyData.currencies.find { it.code == code }?.symbol ?: code }
+        }
 
         val pendingResult = goAsync()
 
@@ -52,10 +61,7 @@ class SmsReceiver : BroadcastReceiver() {
                                 alreadyInDb.add(body)
                                 Log.d("SmsReceiver", "Transaction saved: ${transaction.amount}")
                                 withContext(Dispatchers.Main) {
-                                    SmsNotificationHelper.postTransactionNotification(
-                                        context,
-                                        transaction.copy(id = savedId)
-                                    )
+                                    SmsNotificationHelper.postTransactionNotification(context, transaction.copy(id = savedId), currencySymbol)
                                 }
                             }
                         }

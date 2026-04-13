@@ -98,6 +98,7 @@ private fun QuickAddSheet(
     var isSaving          by remember { mutableStateOf(false) }
     var categoryExpanded  by remember { mutableStateOf(true) }
     var paymentExpanded   by remember { mutableStateOf(true) }
+    var currencySymbol by remember { mutableStateOf("₹") }
 
     LaunchedEffect(Unit) {
         val activity = context as? QuickAddActivity ?: return@LaunchedEffect
@@ -117,6 +118,7 @@ private fun QuickAddSheet(
             isAddedToMonthly = false
         )
         transaction = tx
+        currencySymbol = i.getStringExtra("tx_currency_symbol") ?: "₹"
 //        remark   = tx.remark
         remark = when {
             tx.originalSms.isNotEmpty() && tx.originalSms != "Manual entry" && tx.originalSms != "TEST_SMS" ->
@@ -213,7 +215,7 @@ private fun QuickAddSheet(
                         ) {
                             Column {
                                 Text(
-                                    "₹${formatAmount(tx.amount)}",
+                                    "$currencySymbol${formatAmount(tx.amount)}",
                                     color      = amtColor,
                                     fontSize   = 24.sp,
                                     fontWeight = FontWeight.Bold
