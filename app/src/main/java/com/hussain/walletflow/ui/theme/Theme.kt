@@ -10,22 +10,54 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme =
-        darkColorScheme(primary = Purple80, secondary = PurpleGrey80, tertiary = Pink80)
+    darkColorScheme(
+        primary = Color(0xFFD0BCFF),
+        background = Color(0xFF1C1B1F),
+        surface = Color(0xFF1C1B1F),
+        secondary = PurpleGrey80,
+        tertiary = Pink80
+    )
 
 private val LightColorScheme =
-        lightColorScheme(primary = Purple40, secondary = PurpleGrey40, tertiary = Pink40)
+    lightColorScheme(
+        primary = Color(0xFF6750A4),
+        background = Color(0xFFFFFBFE),
+        surface = Color(0xFFFFFBFE),
+        secondary = PurpleGrey40,
+        tertiary = Pink40
+    )
+
+@Composable
+fun AppTheme(
+    themeMode: ThemeMode = ThemeMode.AUTO,
+    dynamicColor: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.AUTO -> isSystemInDarkTheme()
+    }
+
+    TransactionTrackerTheme(
+        darkTheme = darkTheme,
+        dynamicColor = dynamicColor,
+        content = content
+    )
+}
 
 @Composable
 fun TransactionTrackerTheme(
-        darkTheme: Boolean = isSystemInDarkTheme(),
-        dynamicColor: Boolean = true,
-        content: @Composable () -> Unit
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,
+    content: @Composable () -> Unit
 ) {
     val colorScheme =
             when {

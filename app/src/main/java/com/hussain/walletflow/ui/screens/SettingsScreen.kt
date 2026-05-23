@@ -36,11 +36,13 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hussain.walletflow.data.UserPreferencesRepository
 import com.hussain.walletflow.ui.settings.ImportTransactionsCard
 import com.hussain.walletflow.ui.settings.SettingsImportDialogs
 import com.hussain.walletflow.ui.settings.rememberSettingsImport
 import com.hussain.walletflow.utils.BackupExporter
+import com.hussain.walletflow.viewmodel.SettingsViewModel
 import com.hussain.walletflow.viewmodel.TransactionViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -51,7 +53,8 @@ import kotlinx.coroutines.withContext
 fun SettingsScreen(
     onBack: () -> Unit,
     viewModel: TransactionViewModel,
-    onNavigateToImport: () -> Unit
+    onNavigateToImport: () -> Unit,
+    settingsViewModel: SettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -126,6 +129,8 @@ fun SettingsScreen(
                 prefsRepository = prefsRepository,
                 scope = scope
             )
+
+            SettingsAppearanceSection(settingsViewModel)
 
             SettingsDebugSection(
                 prefsRepository = prefsRepository,

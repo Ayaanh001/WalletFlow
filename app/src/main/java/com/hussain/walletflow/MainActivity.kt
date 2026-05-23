@@ -40,17 +40,25 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.hussain.walletflow.ui.screens.*
-import com.hussain.walletflow.ui.theme.TransactionTrackerTheme
+import com.hussain.walletflow.ui.theme.AppTheme
+import com.hussain.walletflow.viewmodel.SettingsViewModel
 import com.hussain.walletflow.viewmodel.TransactionViewModel
 import java.util.Calendar
 
 class MainActivity : androidx.fragment.app.FragmentActivity() {
-        override fun onCreate(savedInstanceState: Bundle?) {
-                installSplashScreen()
-                super.onCreate(savedInstanceState)
-                enableEdgeToEdge()
-                setContent { TransactionTrackerTheme { MainScreen() } }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            val settingsViewModel: SettingsViewModel = viewModel()
+            val themeMode by settingsViewModel.themeMode.collectAsState()
+
+            AppTheme(themeMode = themeMode) {
+                MainScreen()
+            }
         }
+    }
 }
 
 sealed class Screen(
@@ -128,7 +136,7 @@ fun MainScreen() {
                                 Surface(
                                         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                                         color = MaterialTheme.colorScheme.surfaceContainer,
-                                        tonalElevation = 3.dp,
+//                                        tonalElevation = 3.dp,
                                         modifier = Modifier.clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
                                 ) {
                                         NavigationBar(containerColor = Color.Transparent, tonalElevation = 0.dp, modifier = Modifier.height(110.dp)) {
@@ -171,7 +179,7 @@ fun MainScreen() {
                                                                 },
                                                                 colors = NavigationBarItemDefaults.colors(
                                                                         selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                                                        selectedTextColor = MaterialTheme.colorScheme.primary,
                                                                         indicatorColor = MaterialTheme.colorScheme.primaryContainer,
                                                                         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                                                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant

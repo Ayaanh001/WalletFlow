@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.hussain.walletflow.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -22,7 +23,20 @@ class UserPreferencesRepository(private val context: Context) {
         val APP_LOCK_KEY = booleanPreferencesKey("app_lock_enabled")
         val HIDE_BALANCE_KEY = booleanPreferencesKey("hide_balance")
         val HIDE_INCOME_KEY  = booleanPreferencesKey("hide_income")
+        val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         const val DEFAULT_CURRENCY = "INR"
+    }
+
+    val themeModeFlow: Flow<ThemeMode> =
+        context.dataStore.data.map { preferences ->
+            val themeName = preferences[THEME_MODE_KEY] ?: ThemeMode.AUTO.name
+            ThemeMode.valueOf(themeName)
+        }
+
+    suspend fun updateThemeMode(themeMode: ThemeMode) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_MODE_KEY] = themeMode.name
+        }
     }
     val currencyFlow: Flow<String> =
         context.dataStore.data.map { preferences ->
