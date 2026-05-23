@@ -6,6 +6,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import com.hussain.walletflow.data.CustomItem
+import com.hussain.walletflow.data.CustomItemsRepository
 import com.hussain.walletflow.data.Transaction
 import com.hussain.walletflow.data.TransactionDatabase
 import com.hussain.walletflow.data.TransactionType
@@ -63,6 +65,26 @@ object BackupExporter {
                     append(tx.isAddedToMonthly);  append(",")
                     appendLine(tx.createdAt)
                 }
+
+                // ── Also export Custom Categories & Payment Methods ──────────
+                val customRepo = CustomItemsRepository(context)
+                val cats = customRepo.customCategoriesFlow.first()
+                val pays = customRepo.customPaymentMethodsFlow.first()
+
+                if (cats.isNotEmpty() || pays.isNotEmpty()) {
+                    appendLine() // empty line separator
+                    appendLine("META_CONFIG,Name,IconKey,ColorHex,Type")
+                    cats.forEach {
+                        append("META_ITEM,"); append(escapeCsv(it.name)); append(",")
+                        append(it.iconKey);   append(","); append(it.colorHex); append(",")
+                        appendLine(it.type)
+                    }
+                    pays.forEach {
+                        append("META_ITEM,"); append(escapeCsv(it.name)); append(",")
+                        append(it.iconKey);   append(","); append(it.colorHex); append(",")
+                        appendLine(it.type)
+                    }
+                }
             }
 
             writeToDownloads(context, fileName, csv)
@@ -92,9 +114,27 @@ object BackupExporter {
             val dao = TransactionDatabase.getDatabase(context).transactionDao()
 
             val transactions = mutableListOf<Transaction>()
+            val customCats = mutableListOf<CustomItem>()
+            val customPays = mutableListOf<CustomItem>()
+
             var line: String?
             while (reader.readLine().also { line = it } != null) {
                 val row = parseCsvRow(line!!)
+                if (row.isEmpty()) continue
+
+                // ── Handle Custom Item Definitions ───────────────────────────
+                if (row[0] == "META_ITEM" && row.size >= 5) {
+                    val item = CustomItem(
+                        name     = row[1].trim(),
+                        iconKey  = row[2].trim(),
+                        colorHex = row[3].trim(),
+                        type     = row[4].trim()
+                    )
+                    if (item.type == "payment") customPays.add(item)
+                    else customCats.add(item)
+                    continue
+                }
+
                 if (row.size < 11) continue
                 try {
                     val date = sdf.parse(row[1])?.time ?: continue
@@ -129,9 +169,22 @@ object BackupExporter {
             }
             reader.close()
 
-            if (transactions.isEmpty()) return "Backup file is empty"
-            dao.insertAll(transactions)
-            "Restored ${transactions.size} transactions successfully"
+            if (transactions.isEmpty() && customCats.isEmpty() && customPays.isEmpty()) {
+                return "Backup file is empty"
+            }
+
+            if (transactions.isNotEmpty()) dao.insertAll(transactions)
+            if (customCats.isNotEmpty() || customPays.isNotEmpty()) {
+                CustomItemsRepository(context).importCustomItems(customCats, customPays)
+            }
+
+            val resultMsg = buildString {
+                if (transactions.isNotEmpty()) append("Restored ${transactions.size} transactions. ")
+                if (customCats.isNotEmpty() || customPays.isNotEmpty()) {
+                    append("Imported ${customCats.size + customPays.size} custom categories/payments.")
+                }
+            }
+            resultMsg.trim()
         } catch (e: Exception) {
             "Restore failed: ${e.message}"
         }

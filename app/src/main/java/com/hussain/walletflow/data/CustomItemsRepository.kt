@@ -63,6 +63,31 @@ class CustomItemsRepository(private val context: Context) {
         }
     }
 
+    suspend fun importCustomItems(categories: List<CustomItem>, payments: List<CustomItem>) {
+        context.dataStore.edit { prefs ->
+            val existingCats = parseItems(prefs[CUSTOM_CATEGORIES_KEY]).toMutableList()
+            categories.forEach { cat ->
+                if (existingCats.none { it.name == cat.name }) existingCats.add(cat)
+                else {
+                    // Update existing if it matches by name but has different color/icon
+                    val index = existingCats.indexOfFirst { it.name == cat.name }
+                    existingCats[index] = cat
+                }
+            }
+            prefs[CUSTOM_CATEGORIES_KEY] = serializeItems(existingCats)
+
+            val existingPays = parseItems(prefs[CUSTOM_PAYMENT_METHODS_KEY]).toMutableList()
+            payments.forEach { pay ->
+                if (existingPays.none { it.name == pay.name }) existingPays.add(pay)
+                else {
+                    val index = existingPays.indexOfFirst { it.name == pay.name }
+                    existingPays[index] = pay
+                }
+            }
+            prefs[CUSTOM_PAYMENT_METHODS_KEY] = serializeItems(existingPays)
+        }
+    }
+
     // ── Serialization ────────────────────────────────────────────────────────
 
     private fun parseItems(json: String?): List<CustomItem> {
