@@ -449,22 +449,22 @@ fun SettingsPreferencesSection(
                 shape = shape,
                 icon = Icons.Default.Payments,
                 iconColor = androidx.compose.ui.graphics.Color(0xFF34A853), // Green
-                trailing = {
+                trailing = null,
+                bottomContent = {
                     val currencyObj = remember(selectedCurrency) {
                         CurrencyData.currencies.find { it.code == selectedCurrency }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(Modifier.height(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.surfaceContainerLowest
+                    ) {
                         Text(
                             text = currencyObj?.let { "${it.symbol}  ${it.code}" } ?: selectedCurrency,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                         )
                     }
                 }

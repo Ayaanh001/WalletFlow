@@ -5,9 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -133,9 +133,10 @@ fun ClickableTile(
     icon: Any? = null,
     iconColor: Color = MaterialTheme.colorScheme.primary,
     iconContainerColor: Color? = null,
+    bottomContent: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = {
         Icon(
-            Icons.Default.KeyboardArrowRight,
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
             null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -185,6 +186,9 @@ fun ClickableTile(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     overflow = TextOverflow.Ellipsis, maxLines = 2
                 )
+                if (bottomContent != null) {
+                    bottomContent()
+                }
             }
             if (trailing != null) {
                 Spacer(Modifier.width(8.dp))
