@@ -14,8 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import com.hussain.walletflow.ui.components.ClickableTile
 import com.hussain.walletflow.viewmodel.TransactionViewModel
 import kotlinx.coroutines.launch
 
@@ -156,73 +158,34 @@ fun ImportTransactionsCard(
     import: SettingsImportBundle,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .clickable(enabled = !import.isImporting) { import.onPickFile() },
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-            )
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f),
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        if (import.isImporting) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.tertiary
-                            )
-                        } else {
-                            Icon(
-                                Icons.Default.FileUpload,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.tertiary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-                Column {
-                    Text(
-                        text = "Import Transactions",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text =
-                            if (import.isImporting) "Parsing file…"
-                            else "Import CSV, TXT, Excel (XLS/XLSX), or PDF",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+    // We use a custom ClickableTile style but matching the others
+    ClickableTile(
+        title = "Import Transactions",
+        subtitle = if (import.isImporting) "Parsing file…"
+        else "Import CSV, TXT, Excel, or PDF",
+        onClick = { if (!import.isImporting) import.onPickFile() },
+        shape = RoundedCornerShape(0.dp), // Shape will be controlled by modifier.clip if coming from GroupSurface
+        modifier = modifier,
+        icon = if (import.isImporting) null else Icons.Default.FileDownload,
+        iconColor = androidx.compose.ui.graphics.Color(0xFF8BC34A), // Light Green
+        trailing = if (import.isImporting) {
+            {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
             }
-            if (!import.isImporting) {
+        } else {
+            {
                 Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-    }
+    )
 }
 
 @Composable

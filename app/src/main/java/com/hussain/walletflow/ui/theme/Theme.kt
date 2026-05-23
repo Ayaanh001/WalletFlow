@@ -1,6 +1,7 @@
 package com.hussain.walletflow.ui.theme
 
 import android.app.Activity
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -74,8 +75,13 @@ fun TransactionTrackerTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // Use the surface color for the status bar so it blends with the content
-            window.statusBarColor = colorScheme.surface.toArgb()
+            val backgroundColor = colorScheme.background.toArgb()
+            
+            // Sync window background with theme to prevent flash during transitions
+            window.setBackgroundDrawable(ColorDrawable(backgroundColor))
+
+            // Use transparent status bar for smoother edge-to-edge transitions
+            window.statusBarColor = Color.Transparent.toArgb()
             // Match the navigation bar with our custom bottom bar color
             window.navigationBarColor = colorScheme.surfaceContainer.toArgb()
 

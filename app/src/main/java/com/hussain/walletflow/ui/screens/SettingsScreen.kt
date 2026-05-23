@@ -1,25 +1,33 @@
 package com.hussain.walletflow.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,8 +35,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -38,7 +48,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hussain.walletflow.data.UserPreferencesRepository
-import com.hussain.walletflow.ui.settings.ImportTransactionsCard
+import com.hussain.walletflow.ui.components.HapticSwitch
 import com.hussain.walletflow.ui.settings.SettingsImportDialogs
 import com.hussain.walletflow.ui.settings.rememberSettingsImport
 import com.hussain.walletflow.utils.BackupExporter
@@ -54,7 +64,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     viewModel: TransactionViewModel,
     onNavigateToImport: () -> Unit,
-    settingsViewModel: SettingsViewModel = viewModel()
+    settingsViewModel: SettingsViewModel = viewModel(),
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -82,40 +92,19 @@ fun SettingsScreen(
 
     val import = rememberSettingsImport(viewModel, onNavigateToImport)
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    FilledIconButton(
-                        modifier = Modifier.padding(12.dp),
-                        onClick = onBack,
-                        colors =
-                            IconButtonDefaults.filledIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            )
-                    ) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                },
-                colors =
-                    TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface
-                    )
-            )
-        }
-    ) { innerPadding ->
+    val scrollState = rememberScrollState()
+    val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
+    Box(
+        modifier =
+            Modifier.fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+    ) {
         Column(
             modifier =
                 Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(innerPadding)
+                    .verticalScroll(scrollState)
+                    .padding(top = statusBarPadding + 64.dp)
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -137,9 +126,14 @@ fun SettingsScreen(
                 scope = scope
             )
 
-            SettingsSectionHeader("Preferences")
-            SettingsCurrencyCard(selectedCurrency) { showCurrencyDialog = true }
-            SettingsDeleteFromPassbookCard(deleteFromPassbook, prefsRepository, scope)
+            SettingsPreferencesSection(
+                selectedCurrency = selectedCurrency,
+                onCurrencyClick = { showCurrencyDialog = true },
+                deleteFromPassbook = deleteFromPassbook,
+                onDeleteFromPassbookChange = {
+                    scope.launch { prefsRepository.updateDeleteFromPassbook(it) }
+                }
+            )
 
             SettingsPrivacySection(
                 appLockEnabled = appLockEnabled,
@@ -149,19 +143,64 @@ fun SettingsScreen(
                 scope = scope
             )
 
-            SettingsSectionHeader("Data", Modifier.padding(top = 4.dp))
-            ImportTransactionsCard(import)
-
-            SettingsExportCard(isExporting, exportDone) {
-                isExporting = true
-                scope.launch {
-                    val result =
-                        withContext(Dispatchers.IO) {
-                            BackupExporter.exportToCsv(context)
-                        }
-                    isExporting = false
-                    exportDone = result
+            SettingsDataSection(
+                import = import,
+                isExporting = isExporting,
+                exportDone = exportDone,
+                onExportClick = {
+                    isExporting = true
+                    scope.launch {
+                        val result =
+                            withContext(Dispatchers.IO) {
+                                BackupExporter.exportToCsv(context)
+                            }
+                        isExporting = false
+                        exportDone = result
+                    }
                 }
+            )
+
+            SettingsAboutSection()
+            
+            Spacer(Modifier.height(32.dp))
+        }
+
+        // Sticky Header
+        Surface(
+            color = MaterialTheme.colorScheme.background,
+            shadowElevation = if (scrollState.value > 0) 2.dp else 0.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth()
+                        .statusBarsPadding()
+                        .height(64.dp)
+                        .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilledIconButton(
+                    modifier = Modifier.padding(12.dp),
+                    onClick = onBack,
+                    colors =
+                        IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
     }
@@ -171,21 +210,4 @@ fun SettingsScreen(
     }
 
     SettingsImportDialogs(import)
-}
-
-@Composable
-fun HapticSwitch(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    thumbContent: (@Composable () -> Unit)? = null
-) {
-    val haptic = LocalHapticFeedback.current
-    Switch(
-        checked = checked,
-        onCheckedChange = {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            onCheckedChange(it)
-        },
-        thumbContent = thumbContent
-    )
 }
