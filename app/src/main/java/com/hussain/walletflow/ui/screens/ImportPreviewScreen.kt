@@ -77,6 +77,18 @@ fun ImportPreviewScreen(
 
         val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
 
+        // Helper to format date with year safety
+        val formatParsedDate = remember {
+            { timestamp: Long ->
+                val cal = Calendar.getInstance()
+                cal.timeInMillis = timestamp
+                if (cal.get(Calendar.YEAR) < 100) {
+                    cal.set(Calendar.YEAR, 2000 + cal.get(Calendar.YEAR))
+                }
+                dateFormat.format(cal.time)
+            }
+        }
+
         // Derive selected totals for bottom bar summary
         val selectedIncome by remember(selectedIndices.value) {
                 derivedStateOf {
@@ -101,26 +113,23 @@ fun ImportPreviewScreen(
                                 title = {
                                         Text(
                                                 "Import Preview",
-                                                style = MaterialTheme.typography.titleLarge,
                                                 fontWeight = FontWeight.Bold
                                         )
                                 },
                                 navigationIcon = {
-                                        IconButton(onClick = onBack) {
-                                                Surface(
-                                                        shape = CircleShape,
-                                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                                        modifier = Modifier.size(36.dp)
-                                                ) {
-                                                        Box(contentAlignment = Alignment.Center) {
-                                                                Icon(
-                                                                        Icons.Default.ArrowBack,
-                                                                        contentDescription = "Back",
-                                                                        modifier = Modifier.size(18.dp),
-                                                                        tint = MaterialTheme.colorScheme.onSurface
-                                                                )
-                                                        }
-                                                }
+                                        FilledIconButton(
+                                                modifier = Modifier.padding(12.dp),
+                                                onClick = onBack,
+                                                colors = IconButtonDefaults.filledIconButtonColors(
+                                                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                                                        contentColor = MaterialTheme.colorScheme.onSurface
+                                                )
+                                        ) {
+                                                Icon(
+                                                        Icons.Default.ArrowBack,
+                                                        contentDescription = "Back",
+                                                        modifier = Modifier.size(24.dp)
+                                                )
                                         }
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(
@@ -229,23 +238,31 @@ fun ImportPreviewScreen(
                                 val incomeTotal = incomeItems.sumOf { it.amount }
                                 val expenseTotal = expenseItems.sumOf { it.amount }
 
-                                Card(
+                                Surface(
                                         modifier = Modifier
                                                 .fillMaxWidth()
                                                 .padding(top = 4.dp, bottom = 16.dp, start = 16.dp, end = 16.dp),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                        )
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                                 ) {
                                         Row(
                                                 modifier = Modifier
                                                         .fillMaxWidth()
-                                                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                                                horizontalArrangement = Arrangement.spacedBy(0.dp)
+                                                        .padding(6.dp) // Gap from outer border
+                                                        .height(IntrinsicSize.Min),
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp) // Gap between blocks
                                         ) {
-                                                // Income column
-                                                Column(modifier = Modifier.weight(1f)) {
+                                                val sectionBg = MaterialTheme.colorScheme.surface
+
+                                                // Income Section
+                                                Column(
+                                                        modifier = Modifier
+                                                                .weight(1f)
+                                                                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp, topEnd = 4.dp, bottomEnd = 4.dp))
+                                                                .background(sectionBg)
+                                                                .padding(vertical = 12.dp),
+                                                        horizontalAlignment = Alignment.CenterHorizontally
+                                                ) {
                                                         Text(
                                                                 "Income",
                                                                 style = MaterialTheme.typography.labelSmall,
@@ -263,18 +280,14 @@ fun ImportPreviewScreen(
                                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                 }
-                                                // Divider
-                                                Box(
-                                                        modifier = Modifier
-                                                                .width(1.dp)
-                                                                .height(52.dp)
-                                                                .align(Alignment.CenterVertically)
-                                                                .alpha(0.15f)
-                                                                .background(MaterialTheme.colorScheme.onSurface)
-                                                )
-                                                // Expense column
+
+                                                // Expense Section
                                                 Column(
-                                                        modifier = Modifier.weight(1f),
+                                                        modifier = Modifier
+                                                                .weight(1f)
+                                                                .clip(RoundedCornerShape(4.dp))
+                                                                .background(sectionBg)
+                                                                .padding(vertical = 12.dp),
                                                         horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
                                                         Text(
@@ -294,19 +307,15 @@ fun ImportPreviewScreen(
                                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                 }
-                                                // Divider
-                                                Box(
-                                                        modifier = Modifier
-                                                                .width(1.dp)
-                                                                .height(52.dp)
-                                                                .align(Alignment.CenterVertically)
-                                                                .alpha(0.15f)
-                                                                .background(MaterialTheme.colorScheme.onSurface)
-                                                )
-                                                // Net column
+
+                                                // Net Section
                                                 Column(
-                                                        modifier = Modifier.weight(1f),
-                                                        horizontalAlignment = Alignment.End
+                                                        modifier = Modifier
+                                                                .weight(1f)
+                                                                .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp, topStart = 4.dp, bottomStart = 4.dp))
+                                                                .background(sectionBg)
+                                                                .padding(vertical = 12.dp),
+                                                        horizontalAlignment = Alignment.CenterHorizontally
                                                 ) {
                                                         Text(
                                                                 "Net",
@@ -340,7 +349,7 @@ fun ImportPreviewScreen(
                                 ImportTransactionCard(
                                         parsed = parsed,
                                         isSelected = isSelected,
-                                        dateFormat = dateFormat,
+                                        dateText = formatParsedDate(parsed.date),
                                         onClick = {
                                                 selectedIndices.value =
                                                         if (isSelected) selectedIndices.value.minus(index).toHashSet()
@@ -374,7 +383,7 @@ fun ImportPreviewScreen(
 private fun ImportTransactionCard(
         parsed: ParsedTransaction,
         isSelected: Boolean,
-        dateFormat: SimpleDateFormat,
+        dateText: String,
         onClick: () -> Unit
 ) {
         val isIncome = parsed.type == TransactionType.INCOME
@@ -429,7 +438,7 @@ private fun ImportTransactionCard(
                                         horizontalArrangement = Arrangement.spacedBy(5.dp)
                                 ) {
                                         Text(
-                                                text = dateFormat.format(Date(parsed.date)),
+                                                text = dateText,
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
