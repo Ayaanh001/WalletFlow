@@ -96,7 +96,7 @@ fun SettingsAppearanceSection(viewModel: SettingsViewModel) {
     val themeMode by viewModel.themeMode.collectAsState()
     val haptic = LocalHapticFeedback.current
 
-    SettingsSectionHeader("Appearance", Modifier.padding(top = 4.dp))
+    SettingsSectionHeader("Appearance", Modifier.padding(top = 0.dp))
     ThemeCard(
         selectedTheme = themeMode,
         onThemeChange = { mode ->
@@ -208,7 +208,7 @@ fun SettingsProfileSection(
     prefsRepository: UserPreferencesRepository,
     scope: CoroutineScope
 ) {
-    SettingsSectionHeader("Profile", Modifier.padding(top = 0.dp))
+    SettingsSectionHeader("Profile", Modifier.padding(top = 4.dp))
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors =

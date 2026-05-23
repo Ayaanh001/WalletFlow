@@ -119,6 +119,8 @@ fun SettingsScreen(
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            SettingsAppearanceSection(settingsViewModel)
+
             SettingsProfileSection(
                 userName = userName,
                 nameInput = nameInput,
@@ -129,8 +131,6 @@ fun SettingsScreen(
                 prefsRepository = prefsRepository,
                 scope = scope
             )
-
-            SettingsAppearanceSection(settingsViewModel)
 
             SettingsDebugSection(
                 prefsRepository = prefsRepository,
