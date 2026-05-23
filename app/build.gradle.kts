@@ -94,6 +94,9 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-api:2.20.0")
     implementation("org.slf4j:slf4j-nop:2.0.13")
 
+    // PDFBox for PDF support
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

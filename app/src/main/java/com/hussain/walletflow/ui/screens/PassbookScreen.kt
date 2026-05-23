@@ -162,13 +162,20 @@ fun PassbookScreen(
         }
 
         val dateGroupFormat = remember { SimpleDateFormat("yyyyMMdd", Locale.getDefault()) }
-        val dateLabelFormat = remember { SimpleDateFormat("MMM d  EEEE", Locale.getDefault()) }
+        val dateLabelFormat = remember { SimpleDateFormat("MMM d, yyyy  EEEE", Locale.getDefault()) }
+        val dateLabelNoYearFormat = remember { SimpleDateFormat("MMM d  EEEE", Locale.getDefault()) }
 
         val groupedTransactions = remember(filteredTransactions) {
+                val currentYear = Calendar.getInstance().get(Calendar.YEAR)
                 filteredTransactions
                         .sortedByDescending { it.date }
                         .groupBy { dateGroupFormat.format(Date(it.date)) }
-                        .map { (_, txns) -> dateLabelFormat.format(Date(txns.first().date)) to txns }
+                        .map { (_, txns) ->
+                                val date = Date(txns.first().date)
+                                val cal = Calendar.getInstance().apply { time = date }
+                                val format = if (cal.get(Calendar.YEAR) == currentYear) dateLabelNoYearFormat else dateLabelFormat
+                                format.format(date) to txns
+                        }
         }
 
         // ── SMS permissions ───────────────────────────────────────────────────

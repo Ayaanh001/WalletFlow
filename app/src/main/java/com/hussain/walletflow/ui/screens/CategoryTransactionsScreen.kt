@@ -144,22 +144,26 @@ fun CategoryTransactionsScreen(
 
     // Date formatters
     val dayKeyFmt = remember { SimpleDateFormat("yyyyMMdd", Locale.getDefault()) }
-    val dayLblFmt = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
+    val dayLblFmt = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val dayLblNoYearFmt = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
     val dowFmt    = remember { SimpleDateFormat("EEEE", Locale.getDefault()) }
     val timeFmt   = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
 
     val groupedByDay: List<Pair<Triple<String, String, Double>, List<Transaction>>> =
         remember(filteredTransactions) {
+            val curYear = Calendar.getInstance().get(Calendar.YEAR)
             filteredTransactions
                 .groupBy { dayKeyFmt.format(Date(it.date)) }
                 .entries
                 .sortedByDescending { it.key }
                 .map { (_, txns) ->
                     val date = Date(txns.first().date)
+                    val cal = Calendar.getInstance().apply { time = date }
                     val dayTotal = txns.sumOf {
                         if (it.type == TransactionType.EXPENSE) -it.amount else it.amount
                     }
-                    Triple(dayLblFmt.format(date), dowFmt.format(date), dayTotal) to txns
+                    val label = if (cal.get(Calendar.YEAR) == curYear) dayLblNoYearFmt.format(date) else dayLblFmt.format(date)
+                    Triple(label, dowFmt.format(date), dayTotal) to txns
                 }
         }
 

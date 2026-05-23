@@ -203,20 +203,24 @@ fun HomeScreen(
 
         // Date formatters — expensive to create; share across recompositions
         val dateFormat = remember { SimpleDateFormat("yyyyMMdd", Locale.getDefault()) }
-        val dayLabelFormat = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
+        val dayLabelFormat = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+        val dayLabelNoYearFormat = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
         val dayOfWeekFormat = remember { SimpleDateFormat("EEEE", Locale.getDefault()) }
 
         // Group transactions — only recomputes when the list or month window changes
         val groupedTransactions = remember(monthlyTransactions, startOfMonth, endOfMonth) {
+                val curYear = Calendar.getInstance().get(Calendar.YEAR)
                 monthlyTransactions
                         .filter { it.date in startOfMonth..endOfMonth }
                         .sortedByDescending { it.date }
                         .groupBy { dateFormat.format(Date(it.date)) }
                         .map { (_, txns) ->
                                 val date = Date(txns.first().date)
+                                val cal = Calendar.getInstance().apply { time = date }
                                 val dayTotal = txns.sumOf { if (it.type == TransactionType.EXPENSE) -it.amount else it.amount }
+                                val label = if (cal.get(Calendar.YEAR) == curYear) dayLabelNoYearFormat.format(date) else dayLabelFormat.format(date)
                                 Triple(
-                                        dayLabelFormat.format(date) to dayOfWeekFormat.format(date),
+                                        label to dayOfWeekFormat.format(date),
                                         dayTotal,
                                         txns
                                 )

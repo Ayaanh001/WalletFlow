@@ -14,6 +14,10 @@ import org.apache.poi.poifs.crypt.EncryptionInfo
 import org.apache.poi.poifs.filesystem.POIFSFileSystem
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
 
 /** Wraps the result of parsing a file. */
 data class ParseResult(
@@ -52,12 +56,13 @@ object FileImportParser {
         val isXlsx = fileName.endsWith(".xlsx") || mimeType.contains("spreadsheetml")
         val isXls = fileName.endsWith(".xls") || mimeType.contains("excel")
         val isExcel = isXlsx || isXls
+        val isPdf = fileName.endsWith(".pdf") || mimeType.contains("pdf")
 
         return context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            if (isExcel) {
-                parseExcel(inputStream, isXlsx)
-            } else {
-                ParseResult(parseCsvOrTxt(inputStream))
+            when {
+                isExcel -> parseExcel(inputStream, isXlsx)
+                isPdf -> parsePdf(context, inputStream)
+                else -> ParseResult(parseCsvOrTxt(inputStream))
             }
         }
             ?: ParseResult(emptyList())
@@ -67,9 +72,13 @@ object FileImportParser {
         val mimeType = context.contentResolver.getType(uri) ?: ""
         val fileName = resolveFileName(context, uri)
         val isXlsx = fileName.endsWith(".xlsx") || mimeType.contains("spreadsheetml")
+        val isPdf = fileName.endsWith(".pdf") || mimeType.contains("pdf")
 
         return context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            parseExcel(inputStream, isXlsx, password)
+            when {
+                isPdf -> parsePdf(context, inputStream, password)
+                else -> parseExcel(inputStream, isXlsx, password)
+            }
         }
             ?: ParseResult(emptyList())
     }
@@ -78,38 +87,60 @@ object FileImportParser {
     // CSV / TXT parser
     // ──────────────────────────────────────────────────────────────────────────
 
-    private fun parseCsvOrTxt(inputStream: java.io.InputStream): List<ParsedTransaction> {
+    private fun parseCsvOrTxt(inputStream: InputStream): List<ParsedTransaction> {
         val lines =
             BufferedReader(InputStreamReader(inputStream))
                 .readLines()
                 .map { it.trim() }
                 .filter { it.isNotBlank() }
 
+        return parseLines(lines, isPdf = false)
+    }
+
+    private fun parseLines(lines: List<String>, isPdf: Boolean): List<ParsedTransaction> {
         if (lines.size < 2) return emptyList()
 
         // ── 1. Find the header row ───────────────────────────────────────────
-        // Skip lines that look like bank statement metadata (no recognizable headers)
-        val headerIndex =
-            lines.indexOfFirst { line ->
-                val lower = line.lowercase()
-                lower.contains("date") ||
-                        lower.contains("narration") ||
-                        lower.contains("description") ||
-                        lower.contains("withdrawal") ||
-                        lower.contains("debit") ||
-                        lower.contains("deposit") ||
-                        lower.contains("credit")
+        val keywordSet = setOf(
+            "date", "narration", "description", "particulars", "remarks",
+            "withdrawal", "widthdrawl", "debit", "deposit", "credit", "amount", "amt",
+            "dr", "cr", "txn", "value", "balance", "bal"
+        )
+
+        var headerIndex = -1
+        var maxMatches = 0
+
+        for (i in 0 until minOf(lines.size, 100)) {
+            val lowerLine = lines[i].lowercase()
+            var matches = 0
+            for (kw in keywordSet) {
+                if (lowerLine.contains(kw)) matches++
             }
+            if (matches > maxMatches && matches >= 2) {
+                maxMatches = matches
+                headerIndex = i
+            }
+        }
+
         if (headerIndex < 0) return emptyList()
 
         val headerLine = lines[headerIndex]
-        val delimiter = detectDelimiter(headerLine)
-        val headers = splitLine(headerLine, delimiter).map { it.trim().lowercase() }
+        var delimiter = detectDelimiter(headerLine, isPdf)
+        var headers = splitLine(headerLine, delimiter).map { it.trim().lowercase() }
+
+        // For PDFs, if double-space splitting failed to find columns, try single space
+        if (isPdf && headers.size <= 2 && delimiter == "  ") {
+            val singleSpaceHeaders = splitLine(headerLine, " ").map { it.trim().lowercase() }
+            if (singleSpaceHeaders.size > headers.size) {
+                headers = singleSpaceHeaders
+                delimiter = " "
+            }
+        }
 
         // ── 2. Map column indices ────────────────────────────────────────────
         val dateCol =
             headers.indexOfFirst { h ->
-                h.contains("date") || h.contains("txn date") || h.contains("value date")
+                h.contains("date") || h.contains("txn") || h.contains("value")
             }
         val narrationCol =
             headers.indexOfFirst { h ->
@@ -118,44 +149,88 @@ object FileImportParser {
                         h.contains("particulars") ||
                         h.contains("remarks") ||
                         h.contains("remark") ||
-                        h.contains("details") ||
-                        h.contains("Narration")
+                        h.contains("details")
             }
 
+        // Identify Reference / Cheque column to EXCLUDE it from amount detection
+        val refCol = headers.indexOfFirst { h ->
+            val lower = h.lowercase()
+            lower.contains("ref") || lower.contains("chq") || lower.contains("cheque") || lower.contains("reference") || lower.contains("vch")
+        }
+
+        val balanceCol = headers.indexOfFirst { h ->
+            h.contains("balance") || h.contains("bal")
+        }
+
         // ── WalletFlow backup-specific columns ───────────────────────────────
-        // Our own export has: ID, Date, Type, Amount, Category, Payment Method,
-        // Remark, Bank, Account Last 4, Instrument, Added to Monthly
         val typeCol     = headers.indexOfFirst { h -> h == "type" }
         val categoryCol = headers.indexOfFirst { h -> h == "category" }
         val paymentCol  = headers.indexOfFirst { h -> h == "payment method" }
         val remarkCol   = headers.indexOfFirst { h -> h == "remark" }
 
-        // Is this a WalletFlow backup? Yes if we can see a "type" column with
-        // values like "Income" / "Expense", which distinguishes it from a generic
-        // bank CSV that only has debit/credit columns.
         val isWalletFlowBackup = typeCol >= 0 && categoryCol >= 0
 
         val withdrawalCol =
-            if (isWalletFlowBackup) -1          // WalletFlow uses a single Amount + Type column
+            if (isWalletFlowBackup) -1
             else headers.indexOfFirst { h ->
-                h.contains("withdrawal") ||
-                        h.contains("Withdrawal Amt") ||
-                        h.contains("debit") ||
-                        h == "dr" ||
-                        h.contains("amount") && h.contains("debit")
+                val lower = h.lowercase()
+                (lower.contains("withdrawal") || lower.contains("widthdrawl") ||
+                        lower.contains("debit") || lower == "dr") &&
+                        !lower.contains("credit") && !lower.contains("balance") && !lower.contains("ref")
             }
         val depositCol =
             if (isWalletFlowBackup) -1
             else headers.indexOfFirst { h ->
-                h.contains("deposit") ||
-                        h.contains("Deposit Amt") ||
-                        h.contains("credit") ||
-                        h == "cr" ||
-                        h.contains("amount") && h.contains("credit")
+                val lower = h.lowercase()
+                (lower.contains("deposit") || lower.contains("credit") || lower == "cr") &&
+                        !lower.contains("debit") && !lower.contains("balance") && !lower.contains("ref")
             }
-        // Single "amount" column — used both for WalletFlow backup and generic single-column CSVs
         val singleAmountCol =
-            headers.indexOfFirst { h -> h == "amount" || h == "amt" }
+            if (withdrawalCol < 0 && depositCol < 0)
+                headers.indexOfFirst { h ->
+                    (h == "amount" || h == "amt") && !h.contains("balance") && !h.contains("ref")
+                }
+            else -1
+
+        // ── 2.5 Try to find Opening Balance (for PDF math verification) ──────
+        var runningBalance: Double? = null
+        if (isPdf && balanceCol >= 0) {
+            // 1. Look for explicit labels in the lines above the header
+            for (j in 0 until headerIndex) {
+                val line = lines[j].lowercase()
+                if (line.contains("opening") || line.contains("brought") || line.contains("b/f") || line.contains("carried")) {
+                    val parts = line.split(Regex("[^0-9,.]")).filter { it.isNotBlank() }
+                    for (p in parts.reversed()) {
+                        val b = parseAmount(p)
+                        if (b != null) {
+                            runningBalance = b
+                            break
+                        }
+                    }
+                }
+                if (runningBalance != null) break
+            }
+
+            // 2. Fallback: Search backwards from header for ANY numeric value at the end of a line
+            // This often picks up the "Balance" from the line preceding the first transaction.
+            if (runningBalance == null) {
+                for (j in (headerIndex - 1) downTo 0) {
+                    val line = lines[j].trim()
+                    if (line.isEmpty()) continue
+                    // Extract the last "word" that looks like a number
+                    val parts = line.split(Regex("\\s+"))
+                    for (p in parts.reversed()) {
+                        val b = parseAmount(p)
+                        // Heuristic: Opening balances are usually reasonably large and have decimals
+                        if (b != null && (p.contains(".") || b > 0)) {
+                            runningBalance = b
+                            break
+                        }
+                    }
+                    if (runningBalance != null) break
+                }
+            }
+        }
 
         // ── 3. Parse data rows ───────────────────────────────────────────────
         val results = mutableListOf<ParsedTransaction>()
@@ -163,13 +238,25 @@ object FileImportParser {
         for (i in (headerIndex + 1) until lines.size) {
             val line = lines[i]
             if (line.isBlank()) continue
-            val cells = splitLine(line, delimiter).map { it.trim().removeSurrounding("\"") }
+
+            var cells = splitLine(line, delimiter).map { it.trim().removeSurrounding("\"") }
+
+            // Dynamic fallback for PDF lines that might have less spacing than the header
+            if (isPdf && delimiter == "  ") {
+                val spaceCells = splitLine(line, " ").map { it.trim().removeSurrounding("\"") }
+                // If single space split gives more numeric columns, it's likely more accurate for PDFs
+                val spaceNumCount = spaceCells.count { it.any { c -> c.isDigit() } && parseAmount(it) != null }
+                val currentNumCount = cells.count { it.any { c -> c.isDigit() } && parseAmount(it) != null }
+                if (spaceNumCount > currentNumCount || (spaceCells.size >= headers.size && cells.size < headers.size)) {
+                    cells = spaceCells
+                }
+            }
+
             if (cells.size <= 1) continue
 
             val rawDate = if (dateCol >= 0 && dateCol < cells.size) cells[dateCol] else continue
             val parsedDate = parseDate(rawDate) ?: continue
 
-            // Prefer "Remark" column from WalletFlow backup; fall back to Narration / Description
             val narration = when {
                 remarkCol >= 0 && remarkCol < cells.size && cells[remarkCol].isNotBlank() ->
                     cells[remarkCol]
@@ -177,61 +264,118 @@ object FileImportParser {
                 else -> ""
             }
 
-            val (amount, type) =
-                when {
-                    // ── WalletFlow backup: single Amount column + explicit Type column ──
-                    isWalletFlowBackup && singleAmountCol >= 0 && singleAmountCol < cells.size -> {
-                        val amt = parseAmount(cells[singleAmountCol]) ?: continue
-                        val typeStr = if (typeCol >= 0 && typeCol < cells.size)
-                            cells[typeCol].trim().lowercase() else ""
-                        val txType = when {
-                            typeStr == "income"  -> TransactionType.INCOME
-                            typeStr == "expense" -> TransactionType.EXPENSE
-                            // fallback: positive = income, negative = expense
-                            amt >= 0             -> TransactionType.INCOME
-                            else                 -> TransactionType.EXPENSE
-                        }
-                        Pair(if (amt < 0) -amt else amt, txType)
-                    }
-                    // ── Generic single-amount column (no separate debit/credit cols) ──
-                    singleAmountCol >= 0 && withdrawalCol < 0 && depositCol < 0
-                            && singleAmountCol < cells.size -> {
-                        val amt = parseAmount(cells[singleAmountCol])
-                        if (amt != null) {
-                            if (amt >= 0) Pair(amt, TransactionType.INCOME)
-                            else Pair(-amt, TransactionType.EXPENSE)
-                        } else continue
-                    }
-                    else -> {
-                        val withdrawal =
-                            if (withdrawalCol >= 0 && withdrawalCol < cells.size)
-                                parseAmount(cells[withdrawalCol])
-                            else null
-                        val deposit =
-                            if (depositCol >= 0 && depositCol < cells.size)
-                                parseAmount(cells[depositCol])
-                            else null
+            var amount: Double? = null
+            var type: TransactionType = TransactionType.EXPENSE
 
-                        when {
-                            withdrawal != null && withdrawal > 0 ->
-                                Pair(withdrawal, TransactionType.EXPENSE)
-                            deposit != null && deposit > 0 ->
-                                Pair(deposit, TransactionType.INCOME)
-                            else -> continue // skip rows with no amount
+            if (isWalletFlowBackup && singleAmountCol >= 0 && singleAmountCol < cells.size) {
+                val amt = parseAmount(cells[singleAmountCol])
+                if (amt != null) {
+                    val typeStr = if (typeCol >= 0 && typeCol < cells.size)
+                        cells[typeCol].trim().lowercase() else ""
+                    val txType = when {
+                        typeStr == "income"  -> TransactionType.INCOME
+                        typeStr == "expense" -> TransactionType.EXPENSE
+                        amt >= 0             -> TransactionType.INCOME
+                        else                 -> TransactionType.EXPENSE
+                    }
+                    amount = if (amt < 0) -amt else amt
+                    type = txType
+                }
+            } else if (singleAmountCol >= 0 && withdrawalCol < 0 && depositCol < 0
+                    && singleAmountCol < cells.size) {
+                val amt = parseAmount(cells[singleAmountCol])
+                if (amt != null) {
+                    amount = if (amt >= 0) amt else -amt
+                    type = if (amt >= 0) TransactionType.INCOME else TransactionType.EXPENSE
+                }
+            } else {
+                // PDF / Generic Table Logic
+                
+                // For PDF, we must be careful with merged cells. 
+                // We split each cell by spaces internally to find multiple numbers.
+                val rowNumbers = cells.flatMap { cell -> 
+                    cell.split(Regex("\\s+")).mapNotNull { parseAmount(it) } 
+                }
+
+                val rowBalance = if (isPdf && balanceCol >= 0) {
+                    // The balance is almost always the LAST numeric value on the line in bank PDFs
+                    rowNumbers.lastOrNull()
+                } else null
+
+                // If we have a running balance, use math to be 100% sure
+                if (isPdf && rowBalance != null && runningBalance != null) {
+                    val diff = rowBalance - runningBalance
+                    val absDiff = kotlin.math.abs(diff)
+                    if (absDiff > 0.001) {
+                        // Check if this difference matches any number in the row
+                        // (This helps ignore the Ref No if it's also numeric)
+                        val matchedAny = rowNumbers.any { kotlin.math.abs(it - absDiff) < 0.01 }
+                        if (matchedAny) {
+                            amount = absDiff
+                            type = if (diff > 0) TransactionType.INCOME else TransactionType.EXPENSE
+                            runningBalance = rowBalance
                         }
                     }
                 }
 
-            if (amount <= 0) continue
+                // Fallback if math didn't work (e.g. first row or math mismatch)
+                if (amount == null) {
+                    val withdrawal = if (withdrawalCol >= 0 && withdrawalCol < cells.size && withdrawalCol != refCol)
+                        cells[withdrawalCol].split(Regex("\\s+")).mapNotNull { parseAmount(it) }.firstOrNull() else null
+                    val deposit = if (depositCol >= 0 && depositCol < cells.size && depositCol != refCol)
+                        cells[depositCol].split(Regex("\\s+")).mapNotNull { parseAmount(it) }.firstOrNull() else null
 
-            // Prefer explicit Payment Method column; fall back to detection from narration
+                    // Additional check for PDF: if the value we found is actually the balance, it's a false positive
+                    val finalWithdrawal = if (withdrawal != null && (rowBalance == null || kotlin.math.abs(withdrawal - rowBalance) > 0.01)) withdrawal else null
+                    val finalDeposit = if (deposit != null && (rowBalance == null || kotlin.math.abs(deposit - rowBalance) > 0.01)) deposit else null
+
+                    when {
+                        finalWithdrawal != null && finalWithdrawal > 0 -> {
+                            amount = finalWithdrawal
+                            type = TransactionType.EXPENSE
+                        }
+                        finalDeposit != null && finalDeposit > 0 -> {
+                            amount = finalDeposit
+                            type = TransactionType.INCOME
+                        }
+                        else -> {
+                            // Last ditch for PDF first row: find the number that ISN'T the balance and ISN'T the Ref No
+                            if (isPdf && rowBalance != null) {
+                                val candidates = rowNumbers.filter { it != rowBalance }
+                                if (candidates.size == 1) {
+                                    amount = candidates[0]
+                                    // Guess type based on row content or default to Expense
+                                    type = TransactionType.EXPENSE 
+                                } else if (candidates.size >= 2) {
+                                    // If we have multiple candidates (e.g. Ref No and Amount)
+                                    // The Amount is usually the one closer to the withdrawal/deposit columns
+                                    // or just NOT the Ref No if we can identify it.
+                                    val nonRefCandidates = candidates.filter { c -> 
+                                        val idx = cells.indexOfFirst { it.contains(c.toString()) }
+                                        idx != refCol
+                                    }
+                                    if (nonRefCandidates.isNotEmpty()) {
+                                        amount = nonRefCandidates.last() // Amount usually comes after Ref No
+                                        type = TransactionType.EXPENSE
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Update running balance for next row
+                    if (isPdf && rowBalance != null) runningBalance = rowBalance
+                }
+            }
+
+            if (amount == null || amount <= 0) continue
+
             val paymentMethod = when {
                 paymentCol >= 0 && paymentCol < cells.size && cells[paymentCol].isNotBlank() ->
                     cells[paymentCol]
                 else -> detectPaymentMethod(narration)
             }
 
-            // Preserve original category from WalletFlow backup if present
             val category = if (categoryCol >= 0 && categoryCol < cells.size)
                 cells[categoryCol] else ""
 
@@ -249,6 +393,45 @@ object FileImportParser {
         }
 
         return results
+    }
+
+    private fun parsePdf(
+        context: Context,
+        inputStream: InputStream,
+        password: String? = null
+    ): ParseResult {
+        PDFBoxResourceLoader.init(context)
+        val document: PDDocument = try {
+            if (password != null) {
+                PDDocument.load(inputStream, password)
+            } else {
+                PDDocument.load(inputStream)
+            }
+        } catch (_: InvalidPasswordException) {
+            return ParseResult(emptyList(), passwordRequired = true)
+        } catch (e: Exception) {
+            val msg = e.message?.lowercase() ?: ""
+            if (msg.contains("password") || msg.contains("encrypted")) {
+                return ParseResult(emptyList(), passwordRequired = true)
+            }
+            return ParseResult(emptyList())
+        }
+
+        return try {
+            val stripper = PDFTextStripper()
+            stripper.sortByPosition = true // Essential for multi-column PDFs
+            val text = stripper.getText(document)
+            document.close()
+
+            val lines = text.split(Regex("\\r?\\n"))
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+
+            ParseResult(parseLines(lines, isPdf = true))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ParseResult(emptyList())
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -291,7 +474,7 @@ object FileImportParser {
                             }
                             // OLE2 but not encrypted → try as legacy XLS
                             HSSFWorkbook(fs)
-                        } catch (ole2Ex: Exception) {
+                        } catch (_: Exception) {
                             return ParseResult(emptyList(), passwordRequired = false)
                         }
                     }
@@ -474,14 +657,21 @@ object FileImportParser {
     // ──────────────────────────────────────────────────────────────────────────
 
     /** Split a line respecting quoted fields (e.g. "Smith, John",... ) */
-    private fun splitLine(line: String, delimiter: Char): List<String> {
+    private fun splitLine(line: String, delimiter: String): List<String> {
+        if (delimiter == "  ") {
+            return line.split(Regex(" {2,}")).map { it.trim() }.filter { it.isNotBlank() }
+        }
+        if (delimiter == " ") {
+            return line.split(Regex(" +")).map { it.trim() }.filter { it.isNotBlank() }
+        }
         val result = mutableListOf<String>()
         val current = StringBuilder()
         var inQuotes = false
+        val dChar = if (delimiter.isNotEmpty()) delimiter[0] else ','
         for (ch in line) {
             when {
                 ch == '"' -> inQuotes = !inQuotes
-                ch == delimiter && !inQuotes -> {
+                ch == dChar && !inQuotes -> {
                     result.add(current.toString())
                     current.clear()
                 }
@@ -492,14 +682,19 @@ object FileImportParser {
         return result
     }
 
-    private fun detectDelimiter(headerLine: String): Char {
+    private fun detectDelimiter(headerLine: String, isPdf: Boolean): String {
         val commaCount = headerLine.count { it == ',' }
         val semicolonCount = headerLine.count { it == ';' }
         val tabCount = headerLine.count { it == '\t' }
+        val doubleSpaceCount = Regex(" {2,}").findAll(headerLine).count()
+
         return when {
-            tabCount >= commaCount && tabCount >= semicolonCount -> '\t'
-            semicolonCount > commaCount -> ';'
-            else -> ','
+            tabCount >= 2 -> "\t"
+            commaCount >= 2 -> ","
+            semicolonCount >= 2 -> ";"
+            doubleSpaceCount >= 1 -> "  "
+            isPdf -> "  " // Default for PDF if no obvious delimiter
+            else -> ","
         }
     }
 
@@ -519,7 +714,9 @@ object FileImportParser {
             "MM-dd-yyyy",
             "dd.MM.yyyy",
             "d-MMM-yyyy",
-            "d-MMM-yy"
+            "d-MMM-yy",
+            "dd-MM-yy",
+            "dd/MM/yy"
         )
 
     private fun parseDate(raw: String): Long? {
@@ -529,21 +726,39 @@ object FileImportParser {
                 val sdf = SimpleDateFormat(fmt, Locale.ENGLISH)
                 sdf.isLenient = false
                 val date = sdf.parse(cleaned)
-                if (date != null) return date.time
+                if (date != null) {
+                    val cal = Calendar.getInstance()
+                    cal.time = date
+                    val year = cal.get(Calendar.YEAR)
+                    // If year is 2 digits (e.g. 26), convert it to 2026
+                    if (year < 100) {
+                        cal.set(Calendar.YEAR, 2000 + year)
+                        return cal.timeInMillis
+                    }
+                    return date.time
+                }
             } catch (_: Exception) {}
         }
         return null
     }
 
     private fun parseAmount(raw: String): Double? {
-        val cleaned =
-            raw.trim()
-                .removeSurrounding("\"")
-                .replace(
-                    Regex("[^0-9.\\-]"),
-                    ""
-                ) // Remove everything except digits, dots and minus sign
-        return cleaned.toDoubleOrNull()
+        val cleaned = raw.trim().removeSurrounding("\"")
+        if (cleaned.isEmpty()) return null
+        
+        // Handle parenthesis for negative numbers e.g. (100.00)
+        var p = cleaned
+        if (p.startsWith("(") && p.endsWith(")")) {
+            p = "-" + p.substring(1, p.length - 1)
+        }
+        
+        // Remove commas but KEEP the decimal point and minus sign
+        // Also remove any spaces to handle "349 . 00" but note that our 
+        // PDF logic already splits by spaces to avoid mashing.
+        val pCleaned = p.replace(",", "").replace(" ", "").replace(Regex("[^0-9.\\-]"), "")
+        
+        // If multiple dots exist, Double parsing will fail correctly (prevent mashing)
+        return pCleaned.toDoubleOrNull()
     }
 
     private fun detectPaymentMethod(narration: String): String {
