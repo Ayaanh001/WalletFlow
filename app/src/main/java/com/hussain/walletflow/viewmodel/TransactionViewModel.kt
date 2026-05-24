@@ -104,6 +104,10 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch { dao.updatePaymentMethodByIds(ids, paymentMethod) }
     }
 
+    fun updateDateByIds(ids: List<Long>, date: Long) {
+        viewModelScope.launch { dao.updateDateByIds(ids, date) }
+    }
+
     // ── Passbook → Monthly ───────────────────────────────────────────────────
     fun addToMonthly(transactionId: Long) {
         viewModelScope.launch { dao.markAsAddedToMonthly(transactionId) }

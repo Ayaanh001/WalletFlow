@@ -242,6 +242,9 @@ fun HomeScreen(
 
         // ── Bulk-edit sheet state ────────────────────────────────────────────────
         var showBulkEditSheet by remember { mutableStateOf(false) }
+        var showBulkDatePicker by remember { mutableStateOf(false) }
+        var showBulkTimePicker by remember { mutableStateOf(false) }
+        var bulkEditDate by remember { mutableStateOf(Calendar.getInstance()) }
 
         var bulkEditReopenStep by remember { mutableIntStateOf(0) }
 
@@ -698,6 +701,10 @@ fun HomeScreen(
                                                 selectedIds.clear()
                                                 isSelectionMode = false
                                         },
+                                        onChangeDate = {
+                                                showBulkEditSheet = false
+                                                showBulkDatePicker = true
+                                        },
                                         onRequestNewCategory = {
                                                 bulkEditReopenStep = 1                 // ← remember we were on step 1
                                                 showBulkEditSheet = false
@@ -749,6 +756,32 @@ fun HomeScreen(
                                         showNewPaymentFromSheet = false
                                         showBulkEditSheet = true           // ← reopen sheet on back press
                                 }
+                        )
+                }
+
+                if (showBulkDatePicker) {
+                        DatePickerDialog(
+                                selectedDate = bulkEditDate,
+                                onDateSelected = {
+                                        bulkEditDate = it
+                                        showBulkDatePicker = false
+                                        showBulkTimePicker = true
+                                },
+                                onDismiss = { showBulkDatePicker = false }
+                        )
+                }
+
+                if (showBulkTimePicker) {
+                        TimePickerDialog(
+                                selectedDate = bulkEditDate,
+                                onTimeSelected = {
+                                        bulkEditDate = it
+                                        showBulkTimePicker = false
+                                        viewModel.updateDateByIds(selectedIds.toList(), bulkEditDate.timeInMillis)
+                                        selectedIds.clear()
+                                        isSelectionMode = false
+                                },
+                                onDismiss = { showBulkTimePicker = false }
                         )
                 }
 
@@ -879,6 +912,7 @@ private fun BulkEditSheet(
         customPaymentMethods: List<CustomItem>,
         onChangeCategory: (String) -> Unit,
         onChangePaymentMethod: (String) -> Unit,
+        onChangeDate: () -> Unit,
         onRequestNewCategory: () -> Unit,
         onRequestNewPayment: () -> Unit
 ) {
@@ -949,6 +983,12 @@ private fun BulkEditSheet(
                                                 icon = Icons.Default.Payment,
                                                 label = "Change Payment Method",
                                                 onClick = { step = 2 }
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        BulkEditMenuOption(
+                                                icon = Icons.Default.CalendarToday,
+                                                label = "Change Date & Time",
+                                                onClick = onChangeDate
                                         )
                                 }
 

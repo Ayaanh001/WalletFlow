@@ -55,6 +55,9 @@ interface TransactionDao {
     @Query("UPDATE transactions SET paymentMethod = :paymentMethod WHERE id IN (:ids)")
     suspend fun updatePaymentMethodByIds(ids: List<Long>, paymentMethod: String)
 
+    @Query("UPDATE transactions SET date = :date WHERE id IN (:ids)")
+    suspend fun updateDateByIds(ids: List<Long>, date: Long)
+
     // AUTO-SCAN dedup: skip SMS already stored ANYWHERE (passbook + monthly).
     // Prevents duplicates when SmsReceiver or the initial scan runs automatically.
     @Query("SELECT originalSms FROM transactions WHERE originalSms != ''")
