@@ -36,6 +36,7 @@ import com.hussain.walletflow.data.TransactionCategories
 import com.hussain.walletflow.data.TransactionDatabase
 import com.hussain.walletflow.data.TransactionType
 import com.hussain.walletflow.ui.theme.TransactionTrackerTheme
+import com.hussain.walletflow.utils.FormatUtils
 import com.hussain.walletflow.utils.getCategoryColor
 import com.hussain.walletflow.utils.getCategoryIcon
 import com.hussain.walletflow.utils.getPaymentChipColor
@@ -595,7 +596,4 @@ private fun QuickAddSheet(
     }
 }
 
-private fun formatAmount(amount: Double): String =
-    NumberFormat.getNumberInstance(Locale("en", "IN")).apply {
-        minimumFractionDigits = 2; maximumFractionDigits = 2
-    }.format(amount)
+private fun formatAmount(amount: Double): String = FormatUtils.formatIndianAmount(amount)

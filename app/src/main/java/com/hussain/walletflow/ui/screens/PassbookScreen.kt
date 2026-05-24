@@ -45,6 +45,7 @@ import com.hussain.walletflow.data.UserPreferencesRepository
 import com.hussain.walletflow.ui.SmsScanner
 import com.hussain.walletflow.ui.theme.ExpenseRed
 import com.hussain.walletflow.ui.theme.IncomeGreen
+import com.hussain.walletflow.utils.FormatUtils
 import com.hussain.walletflow.utils.getCategoryIcon
 import com.hussain.walletflow.utils.getPaymentIcon
 import com.hussain.walletflow.viewmodel.TransactionViewModel
@@ -671,7 +672,7 @@ fun TransactionCard(
 ) {
         val timeFormat = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
         val timeText   = remember(transaction.date)   { timeFormat.format(Date(transaction.date)) }
-        val amountText = remember(transaction.amount) { String.format("%.2f", transaction.amount) }
+        val amountText = remember(transaction.amount) { FormatUtils.formatIndianAmount(transaction.amount) }
         val bankLabel  = remember(transaction.bankName, transaction.accountLastFour, transaction.instrumentType) {
                 when (transaction.instrumentType) {
                         "CARD" -> "${transaction.bankName} • Card ${transaction.accountLastFour}"

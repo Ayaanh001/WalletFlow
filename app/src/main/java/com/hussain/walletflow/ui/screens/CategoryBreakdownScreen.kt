@@ -49,6 +49,7 @@ import com.hussain.walletflow.data.TransactionType
 import com.hussain.walletflow.data.UserPreferencesRepository
 import com.hussain.walletflow.ui.theme.ExpenseRed
 import com.hussain.walletflow.ui.theme.IncomeGreen
+import com.hussain.walletflow.utils.FormatUtils
 import com.hussain.walletflow.utils.getCategoryColor
 import com.hussain.walletflow.utils.getCategoryIcon
 import com.hussain.walletflow.utils.getPaymentChipColor
@@ -62,14 +63,7 @@ import kotlin.math.sqrt
 
 // ── Formatters ────────────────────────────────────────────────────────────────
 
-private val indianFmt: NumberFormat by lazy {
-    NumberFormat.getNumberInstance(Locale("en", "IN")).apply {
-        minimumFractionDigits = 2
-        maximumFractionDigits = 2
-    }
-}
-
-private fun fmt(v: Double): String = indianFmt.format(v)
+private fun fmt(v: Double): String = FormatUtils.formatIndianAmount(v)
 
 // ── Data models ───────────────────────────────────────────────────────────────
 

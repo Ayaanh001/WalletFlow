@@ -46,6 +46,7 @@ import com.hussain.walletflow.data.UserPreferencesRepository
 import com.hussain.walletflow.ui.theme.BalanceBlue
 import com.hussain.walletflow.ui.theme.ExpenseRed
 import com.hussain.walletflow.ui.theme.IncomeGreen
+import com.hussain.walletflow.utils.FormatUtils
 import com.hussain.walletflow.utils.getCategoryColor
 import com.hussain.walletflow.utils.getCategoryIcon
 import com.hussain.walletflow.utils.getPaymentChipColor
@@ -58,15 +59,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.launch
 
-// Locale-aware Indian number formatter — created once, not on every call
-private val indianNumberFormat: NumberFormat by lazy {
-        NumberFormat.getNumberInstance(Locale("en", "IN")).apply {
-                minimumFractionDigits = 2
-                maximumFractionDigits = 2
-        }
-}
-
-private fun formatIndianAmount(amount: Double): String = indianNumberFormat.format(amount)
+private fun formatIndianAmount(amount: Double): String = FormatUtils.formatIndianAmount(amount)
 
 /**
  * Renders 4 randomised M3-style shapes (circle, rounded-square, diamond, pill)
@@ -620,13 +613,15 @@ fun HomeScreen(
                                                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                                                 )
                                                                         }
-                                                                        Text(
-                                                                                text = "${if (dayTotal <= 0) "- " else ""}${currency.symbol} ${formatIndianAmount(kotlin.math.abs(dayTotal))}",
-                                                                                style = MaterialTheme.typography.titleMedium,
-                                                                                fontWeight = FontWeight.SemiBold,
-                                                                                color = if (dayTotal >= 0) IncomeGreen
-                                                                                else MaterialTheme.colorScheme.onSurfaceVariant
-                                                                        )
+                                                                        if (dayTotal != 0.0) {
+                                                                                Text(
+                                                                                        text = "${if (dayTotal < 0) "- " else ""}${currency.symbol} ${formatIndianAmount(kotlin.math.abs(dayTotal))}",
+                                                                                        style = MaterialTheme.typography.titleMedium,
+                                                                                        fontWeight = FontWeight.SemiBold,
+                                                                                        color = if (dayTotal > 0) IncomeGreen
+                                                                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                                                                )
+                                                                        }
                                                                 }
                                                         }
 
@@ -1332,10 +1327,10 @@ fun HomeTransactionItem(
 
         // Format amount once, not inside nested lambdas
         val amountText = remember(transaction.amount) {
-                String.format("%.2f", transaction.amount)
+                FormatUtils.formatIndianAmount(transaction.amount)
         }
         val balanceText = remember(runningBalance) {
-                String.format("%.2f", runningBalance)
+                FormatUtils.formatIndianAmount(runningBalance)
         }
         val displayText = remember(transaction.originalSms, transaction.remark) {
                 if (transaction.originalSms.isNotEmpty() && transaction.originalSms != "Manual entry")

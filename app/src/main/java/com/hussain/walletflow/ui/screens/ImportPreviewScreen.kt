@@ -27,18 +27,14 @@ import com.hussain.walletflow.R
 import com.hussain.walletflow.data.TransactionType
 import com.hussain.walletflow.ui.theme.ExpenseRed
 import com.hussain.walletflow.ui.theme.IncomeGreen
+import com.hussain.walletflow.utils.FormatUtils
 import com.hussain.walletflow.utils.ParsedTransaction
 import com.hussain.walletflow.viewmodel.TransactionViewModel
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
-private fun formatIndianAmount(amount: Double): String {
-        val nf = NumberFormat.getNumberInstance(Locale("en", "IN"))
-        nf.minimumFractionDigits = 2
-        nf.maximumFractionDigits = 2
-        return nf.format(amount)
-}
+private fun formatIndianAmount(amount: Double): String = FormatUtils.formatIndianAmount(amount)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -510,7 +506,7 @@ private fun ImportBottomBar(
                         // of what's about to be imported.
                         Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                color = MaterialTheme.colorScheme.surfaceContainer,
                                 modifier = Modifier.fillMaxWidth()
                         ) {
                                 Row(

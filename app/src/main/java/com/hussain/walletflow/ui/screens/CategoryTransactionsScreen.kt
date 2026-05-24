@@ -31,6 +31,7 @@ import com.hussain.walletflow.data.TransactionType
 import com.hussain.walletflow.data.UserPreferencesRepository
 import com.hussain.walletflow.ui.theme.ExpenseRed
 import com.hussain.walletflow.ui.theme.IncomeGreen
+import com.hussain.walletflow.utils.FormatUtils
 import com.hussain.walletflow.utils.getCategoryColor
 import com.hussain.walletflow.utils.getCategoryIcon
 import com.hussain.walletflow.utils.getPaymentChipColor
@@ -62,13 +63,7 @@ fun CategoryTransactionsScreen(
             ?: CurrencyData.currencies.first()
     }
 
-    val indianFmt = remember {
-        NumberFormat.getNumberInstance(Locale("en", "IN")).apply {
-            minimumFractionDigits = 2
-            maximumFractionDigits = 2
-        }
-    }
-    fun fmt(v: Double) = indianFmt.format(v)
+    fun fmt(v: Double) = FormatUtils.formatIndianAmount(v)
 
     // ── Month state ───────────────────────────────────────────────────────────
     val now = remember { Calendar.getInstance() }
@@ -515,7 +510,7 @@ private fun CategoryTransactionItem(
                     }
                 }
                 Text(
-                    text = "$currencySymbol ${String.format("%.2f", transaction.amount)}",
+                    text = "$currencySymbol ${FormatUtils.formatIndianAmount(transaction.amount)}",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = amountColor

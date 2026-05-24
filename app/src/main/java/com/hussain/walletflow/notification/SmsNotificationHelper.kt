@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import com.hussain.walletflow.R
 import com.hussain.walletflow.data.Transaction
 import com.hussain.walletflow.data.TransactionType
+import com.hussain.walletflow.utils.FormatUtils
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -122,10 +123,7 @@ object SmsNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
-    private fun formatAmount(amount: Double): String =
-        NumberFormat.getNumberInstance(Locale("en", "IN")).apply {
-            minimumFractionDigits = 2; maximumFractionDigits = 2
-        }.format(amount)
+    private fun formatAmount(amount: Double): String = FormatUtils.formatIndianAmount(amount)
 
     fun cancel(context: Context, notifId: Int) =
         (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
