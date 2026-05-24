@@ -1125,6 +1125,7 @@ fun AddTransactionScreen(
         if (showNewPaymentDialog) {
                 CreateCustomItemScreen(
                         isCategory = false,
+                        initialTypeIndex = if (selectedType == TransactionType.INCOME) 1 else 0,
                         existingNames = TransactionCategories.PAYMENT_METHODS +
                                 customPaymentMethods.map { it.name },
                         onConfirm = { itemName, iconKey, colorHex, itemType ->
