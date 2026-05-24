@@ -64,3 +64,4 @@
 -dontwarn org.w3c.dom.events.**
 -dontwarn org.w3c.dom.svg.**
 -dontwarn org.w3c.dom.traversal.**
+-dontwarn com.gemalto.jp2.JP2Decoder
