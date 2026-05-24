@@ -1,5 +1,7 @@
 package com.hussain.walletflow.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -89,6 +91,24 @@ fun SettingsScreen(
     val hideIncome by prefsRepository.hideIncomeFlow.collectAsState(initial = false)
     var isExporting by remember { mutableStateOf(false) }
     var exportDone by remember { mutableStateOf<String?>(null) }
+    var pendingCsvContent by remember { mutableStateOf<String?>(null) }
+
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null && pendingCsvContent != null) {
+            scope.launch {
+                val success = withContext(Dispatchers.IO) {
+                    BackupExporter.writeToUri(context, uri, pendingCsvContent!!)
+                }
+                isExporting = false
+                exportDone = if (success) "Backup saved successfully" else "Failed to save backup"
+                pendingCsvContent = null
+            }
+        } else {
+            isExporting = false
+        }
+    }
 
     val import = rememberSettingsImport(viewModel, onNavigateToImport)
 
@@ -148,14 +168,17 @@ fun SettingsScreen(
                 isExporting = isExporting,
                 exportDone = exportDone,
                 onExportClick = {
-                    isExporting = true
                     scope.launch {
-                        val result =
-                            withContext(Dispatchers.IO) {
-                                BackupExporter.exportToCsv(context)
-                            }
-                        isExporting = false
-                        exportDone = result
+                        val data = withContext(Dispatchers.IO) {
+                            BackupExporter.prepareBackupData(context)
+                        }
+                        if (data != null) {
+                            pendingCsvContent = data.second
+                            createDocumentLauncher.launch(data.first)
+                            isExporting = true
+                        } else {
+                            exportDone = "No transactions to export"
+                        }
                     }
                 }
             )

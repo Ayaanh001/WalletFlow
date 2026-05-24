@@ -1,11 +1,7 @@
 package com.hussain.walletflow.utils
 
-import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import com.hussain.walletflow.data.CustomItem
 import com.hussain.walletflow.data.CustomItemsRepository
 import com.hussain.walletflow.data.Transaction
@@ -25,72 +21,78 @@ object BackupExporter {
         "ID,Date,Type,Amount,Category,Payment Method,Remark,Bank,Account Last 4,Instrument,Added to Monthly,Created At"
 
     /**
-     * Exports all monthly transactions to a CSV in Downloads.
-     * Rows are ordered oldest-first so that a restore re-inserts them in the
-     * same chronological order and the home screen (sorted by date DESC) shows
-     * the same sequence.
+     * Prepares the CSV content and a suggested filename for backup.
+     * Returns a Pair of (fileName, csvContent) or null if no transactions exist.
      */
-    suspend fun exportToCsv(context: Context): String {
-        return try {
-            val dao = TransactionDatabase.getDatabase(context).transactionDao()
-            val transactions = dao.getAllTransactions().first()
-                .filter { it.isAddedToMonthly }
-                .sortedBy { it.date } // oldest first → re-import preserves order
+    suspend fun prepareBackupData(context: Context): Pair<String, String>? {
+        val dao = TransactionDatabase.getDatabase(context).transactionDao()
+        val transactions = dao.getAllTransactions().first()
+            .filter { it.isAddedToMonthly }
+            .sortedBy { it.date } // oldest first → re-import preserves order
 
-            if (transactions.isEmpty()) return "No transactions to export"
+        if (transactions.isEmpty()) return null
 
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            val fileName = "walletflow_backup_${
-                SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            }.csv"
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val fileName = "walletflow_backup_${
+            SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        }.csv"
 
-            val csv = buildString {
-                appendLine(BACKUP_HEADER)
-                transactions.forEach { tx ->
-                    val type = when (tx.type) {
-                        TransactionType.INCOME  -> "Income"
-                        TransactionType.EXPENSE -> "Expense"
-                        else                    -> "Unknown"
-                    }
-                    append(tx.id);               append(",")
-                    append(sdf.format(Date(tx.date))); append(",")
-                    append(type);                append(",")
-                    append(tx.amount);           append(",")
-                    append(escapeCsv(tx.category));       append(",")
-                    append(escapeCsv(tx.paymentMethod));  append(",")
-                    append(escapeCsv(tx.remark));         append(",")
-                    append(escapeCsv(tx.bankName));       append(",")
-                    append(escapeCsv(tx.accountLastFour));append(",")
-                    append(escapeCsv(tx.instrumentType)); append(",")
-                    append(tx.isAddedToMonthly);  append(",")
-                    appendLine(tx.createdAt)
+        val csv = buildString {
+            appendLine(BACKUP_HEADER)
+            transactions.forEach { tx ->
+                val type = when (tx.type) {
+                    TransactionType.INCOME  -> "Income"
+                    TransactionType.EXPENSE -> "Expense"
+                    else                    -> "Unknown"
                 }
-
-                // ── Also export Custom Categories & Payment Methods ──────────
-                val customRepo = CustomItemsRepository(context)
-                val cats = customRepo.customCategoriesFlow.first()
-                val pays = customRepo.customPaymentMethodsFlow.first()
-
-                if (cats.isNotEmpty() || pays.isNotEmpty()) {
-                    appendLine() // empty line separator
-                    appendLine("META_CONFIG,Name,IconKey,ColorHex,Type")
-                    cats.forEach {
-                        append("META_ITEM,"); append(escapeCsv(it.name)); append(",")
-                        append(it.iconKey);   append(","); append(it.colorHex); append(",")
-                        appendLine(it.type)
-                    }
-                    pays.forEach {
-                        append("META_ITEM,"); append(escapeCsv(it.name)); append(",")
-                        append(it.iconKey);   append(","); append(it.colorHex); append(",")
-                        appendLine(it.type)
-                    }
-                }
+                append(tx.id);               append(",")
+                append(sdf.format(Date(tx.date))); append(",")
+                append(type);                append(",")
+                append(tx.amount);           append(",")
+                append(escapeCsv(tx.category));       append(",")
+                append(escapeCsv(tx.paymentMethod));  append(",")
+                append(escapeCsv(tx.remark));         append(",")
+                append(escapeCsv(tx.bankName));       append(",")
+                append(escapeCsv(tx.accountLastFour));append(",")
+                append(escapeCsv(tx.instrumentType)); append(",")
+                append(tx.isAddedToMonthly);  append(",")
+                appendLine(tx.createdAt)
             }
 
-            writeToDownloads(context, fileName, csv)
-            "Saved ${transactions.size} transactions → Downloads/$fileName"
+            // ── Also export Custom Categories & Payment Methods ──────────
+            val customRepo = CustomItemsRepository(context)
+            val cats = customRepo.customCategoriesFlow.first()
+            val pays = customRepo.customPaymentMethodsFlow.first()
+
+            if (cats.isNotEmpty() || pays.isNotEmpty()) {
+                appendLine() // empty line separator
+                appendLine("META_CONFIG,Name,IconKey,ColorHex,Type")
+                cats.forEach {
+                    append("META_ITEM,"); append(escapeCsv(it.name)); append(",")
+                    append(it.iconKey);   append(","); append(it.colorHex); append(",")
+                    appendLine(it.type)
+                }
+                pays.forEach {
+                    append("META_ITEM,"); append(escapeCsv(it.name)); append(",")
+                    append(it.iconKey);   append(","); append(it.colorHex); append(",")
+                    appendLine(it.type)
+                }
+            }
+        }
+        return fileName to csv
+    }
+
+    /**
+     * Writes the given content to a Uri (provided via SAF).
+     */
+    fun writeToUri(context: Context, uri: Uri, content: String): Boolean {
+        return try {
+            context.contentResolver.openOutputStream(uri)?.use { stream ->
+                OutputStreamWriter(stream, Charsets.UTF_8).use { it.write(content) }
+            }
+            true
         } catch (e: Exception) {
-            "Export failed: ${e.message}"
+            false
         }
     }
 
@@ -218,25 +220,5 @@ object BackupExporter {
         }
         fields.add(sb.toString())
         return fields
-    }
-
-    private fun writeToDownloads(context: Context, fileName: String, content: String) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-                put(MediaStore.Downloads.MIME_TYPE, "text/csv")
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-            }
-            val uri = context.contentResolver.insert(
-                MediaStore.Downloads.EXTERNAL_CONTENT_URI, values
-            ) ?: throw IllegalStateException("Could not create file")
-            context.contentResolver.openOutputStream(uri)?.use { stream ->
-                OutputStreamWriter(stream, Charsets.UTF_8).use { it.write(content) }
-            }
-        } else {
-            val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            dir.mkdirs()
-            java.io.File(dir, fileName).writeText(content, Charsets.UTF_8)
-        }
     }
 }
