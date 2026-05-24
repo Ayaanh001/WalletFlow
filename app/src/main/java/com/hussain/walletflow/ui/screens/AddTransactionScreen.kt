@@ -119,8 +119,8 @@ fun AddTransactionScreen(
         val snackbarHostState = remember { SnackbarHostState() }
 
         // Keep IconUtils runtime maps in sync
-        LaunchedEffect(customCategories) { registerCustomCategories(customCategories) }
-        LaunchedEffect(customPaymentMethods) { registerCustomPaymentMethods(customPaymentMethods) }
+        registerCustomCategories(customCategories)
+        registerCustomPaymentMethods(customPaymentMethods)
 
         var showNewCategoryDialog by remember { mutableStateOf(false) }
         var showNewPaymentDialog  by remember { mutableStateOf(false) }

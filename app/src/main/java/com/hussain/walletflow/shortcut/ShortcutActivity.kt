@@ -124,32 +124,9 @@ private fun ShortcutAddTransactionScreen(
     val customCategories by customItemsRepo.customCategoriesFlow.collectAsState(initial = emptyList())
     val customPaymentMethods by customItemsRepo.customPaymentMethodsFlow.collectAsState(initial = emptyList())
 
-    // Keep global maps in sync for anything outside this screen that uses them
-    LaunchedEffect(customCategories) { registerCustomCategories(customCategories) }
-    LaunchedEffect(customPaymentMethods) { registerCustomPaymentMethods(customPaymentMethods) }
-
-    // Synchronous local lookup maps — built directly from state on the same frame
-    // that customCategories/customPaymentMethods change, so chips always get the
-    // correct icon+color immediately without waiting for a LaunchedEffect.
-    val customCategoryStyleMap = remember(customCategories) {
-        customCategories.associate { item ->
-            val color = parseHexColor(item.colorHex)
-            val icon  = AVAILABLE_ICONS[item.iconKey] ?: Icons.Filled.Category
-            item.name to Pair(icon, color)
-        }
-    }
-    val customPaymentStyleMap = remember(customPaymentMethods) {
-        customPaymentMethods.associate { item ->
-            val color = parseHexColor(item.colorHex)
-            val icon  = AVAILABLE_ICONS[item.iconKey] ?: Icons.Filled.Payments
-            item.name to Pair(icon, color)
-        }
-    }
-
-    fun categoryColor(name: String) = customCategoryStyleMap[name]?.second ?: getCategoryColor(name)
-    fun categoryIcon(name: String)  = customCategoryStyleMap[name]?.first  ?: getCategoryIcon(name)
-    fun paymentColor(name: String)  = customPaymentStyleMap[name]?.second  ?: getPaymentChipColor(name)
-    fun paymentIcon(name: String)   = customPaymentStyleMap[name]?.first   ?: getPaymentIcon(name)
+    // Keep global maps in sync
+    registerCustomCategories(customCategories)
+    registerCustomPaymentMethods(customPaymentMethods)
 
     var showNewCategoryDialog by remember { mutableStateOf(false) }
     var showNewPaymentDialog by remember { mutableStateOf(false) }
@@ -457,15 +434,15 @@ private fun ShortcutAddTransactionScreen(
                                     if (selectedCategory.isNotEmpty()) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
-                                                categoryIcon(selectedCategory), contentDescription = null,
+                                                getCategoryIcon(selectedCategory), contentDescription = null,
                                                 modifier = Modifier.size(14.dp),
-                                                tint = categoryColor(selectedCategory)
+                                                tint = getCategoryColor(selectedCategory)
                                             )
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(
                                                 selectedCategory,
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = categoryColor(selectedCategory),
+                                                color = getCategoryColor(selectedCategory),
                                                 fontWeight = FontWeight.SemiBold
                                             )
                                         }
@@ -490,7 +467,7 @@ private fun ShortcutAddTransactionScreen(
                                     categories.forEach { category ->
                                         key(category) {
                                             val isSelected = selectedCategory == category
-                                            val chipColor = categoryColor(category)
+                                            val chipColor = getCategoryColor(category)
                                             Box(
                                                 modifier = Modifier
                                                     .clip(RoundedCornerShape(50.dp))
@@ -500,7 +477,7 @@ private fun ShortcutAddTransactionScreen(
                                                     .padding(horizontal = 12.dp, vertical = 10.dp)
                                             ) {
                                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                    Icon(categoryIcon(category), contentDescription = null, modifier = Modifier.size(16.dp), tint = chipColor)
+                                                    Icon(getCategoryIcon(category), contentDescription = null, modifier = Modifier.size(16.dp), tint = chipColor)
                                                     Text(
                                                         category,
                                                         style = MaterialTheme.typography.labelMedium,
@@ -556,13 +533,13 @@ private fun ShortcutAddTransactionScreen(
                                 Column {
                                     Text("Payment Method", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                                     if (selectedPaymentMethod.isNotEmpty()) {
-                                        val chipColor = paymentColor(selectedPaymentMethod)
+                                        val chipColor = getPaymentChipColor(selectedPaymentMethod)
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             when {
                                                 selectedPaymentMethod == "GPay" -> Image(painterResource(R.drawable.gpay), "GPay", modifier = Modifier.size(14.dp))
                                                 selectedPaymentMethod == "PhonePe" -> Image(painterResource(R.drawable.phonepe), "PhonePe", modifier = Modifier.size(14.dp))
                                                 selectedPaymentMethod.contains("•") -> Icon(Icons.Default.AccountBalance, contentDescription = null, modifier = Modifier.size(14.dp), tint = chipColor)
-                                                else -> Icon(paymentIcon(selectedPaymentMethod), contentDescription = null, modifier = Modifier.size(14.dp), tint = chipColor)
+                                                else -> Icon(getPaymentIcon(selectedPaymentMethod), contentDescription = null, modifier = Modifier.size(14.dp), tint = chipColor)
                                             }
                                             Spacer(modifier = Modifier.width(4.dp))
                                             Text(selectedPaymentMethod, style = MaterialTheme.typography.bodySmall, color = chipColor, fontWeight = FontWeight.SemiBold)
@@ -591,7 +568,7 @@ private fun ShortcutAddTransactionScreen(
                                     allPaymentMethods.forEach { method ->
                                         key(method) {
                                             val isSelected = selectedPaymentMethod == method
-                                            val chipColor = paymentColor(method)
+                                            val chipColor = getPaymentChipColor(method)
                                             Box(
                                                 modifier = Modifier
                                                     .clip(RoundedCornerShape(50.dp))
@@ -605,7 +582,7 @@ private fun ShortcutAddTransactionScreen(
                                                         method == "GPay" -> Image(painterResource(R.drawable.gpay), "GPay", modifier = Modifier.size(16.dp))
                                                         method == "PhonePe" -> Image(painterResource(R.drawable.phonepe), "PhonePe", modifier = Modifier.size(16.dp))
                                                         method.contains("•") -> Icon(Icons.Default.AccountBalance, contentDescription = null, modifier = Modifier.size(16.dp), tint = if (isSelected) chipColor else MaterialTheme.colorScheme.onSurfaceVariant)
-                                                        else -> Icon(paymentIcon(method), contentDescription = null, modifier = Modifier.size(16.dp), tint = chipColor)
+                                                        else -> Icon(getPaymentIcon(method), contentDescription = null, modifier = Modifier.size(16.dp), tint = chipColor)
                                                     }
                                                     Text(
                                                         method,

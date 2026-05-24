@@ -249,8 +249,8 @@ fun HomeScreen(
         val customItemsRepo = remember { CustomItemsRepository(context) }
         val customCategories by customItemsRepo.customCategoriesFlow.collectAsState(initial = emptyList())
         val customPaymentMethods by customItemsRepo.customPaymentMethodsFlow.collectAsState(initial = emptyList())
-        LaunchedEffect(customCategories) { registerCustomCategories(customCategories) }
-        LaunchedEffect(customPaymentMethods) { registerCustomPaymentMethods(customPaymentMethods) }
+        registerCustomCategories(customCategories)
+        registerCustomPaymentMethods(customPaymentMethods)
 
         // ── Create-new overlays (state lifted here so they render ABOVE ModalBottomSheet popup) ──
         var showNewCategoryFromSheet by remember { mutableStateOf(false) }

@@ -89,8 +89,8 @@ private fun QuickAddSheet(
     val customCategories by customItemsRepo.customCategoriesFlow.collectAsState(initial = emptyList())
     val customPaymentMethods by customItemsRepo.customPaymentMethodsFlow.collectAsState(initial = emptyList())
 
-    LaunchedEffect(customCategories) { registerCustomCategories(customCategories) }
-    LaunchedEffect(customPaymentMethods) { registerCustomPaymentMethods(customPaymentMethods) }
+    registerCustomCategories(customCategories)
+    registerCustomPaymentMethods(customPaymentMethods)
 
     var transaction       by remember { mutableStateOf<Transaction?>(null) }
     var remark            by remember { mutableStateOf("") }
