@@ -4,13 +4,19 @@ An elegant, secure, and automated Android application that scans banking SMS mes
 
 ## ✨ Features
 
-✅ **Automatic SMS Tracking**: Real-time detection and parsing of banking SMS messages.
-✅ **Manual & File Import**: Add transactions manually or import them from CSV, TXT, XLS, and XLSX files.
-✅ **Smart Categorization**: Automatically detects Income/Expense types and assigns categories based on transaction patterns.
-✅ **Monthly Passbook**: Organized view of your financial flow, grouped by month and transaction date.
-✅ **Secure & Private**: All data is stored locally using Room database. No internet permission required.
-✅ **Enhanced UI**: Modern Material 3 cards, colored pill indicators, and a clean, responsive design.
-✅ **Bank Support**: Pre-configured for major Indian banks (SBI, HDFC, ICICI, Axis, PNB, etc.).
+**Automatic SMS Tracking**: Real-time detection and parsing of banking SMS messages.
+
+**Manual & File Import**: Add transactions manually or import them from CSV, TXT, XLS, and XLSX files.
+
+**Smart Categorization**: Automatically detects Income/Expense types and assigns categories based on transaction patterns.
+
+**Monthly Passbook**: Organized view of your financial flow, grouped by month and transaction date.
+
+**Secure & Private**: All data is stored locally using Room database. No internet permission required.
+
+**Enhanced UI**: Modern Material 3 cards, colored pill indicators, and a clean, responsive design.
+
+**Bank Support**: Pre-configured for major Indian banks (SBI, HDFC, ICICI, Axis, PNB, etc.).
 
 ## 🏗️ Project Structure (Modern Compose Architecture)
 
