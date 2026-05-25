@@ -486,36 +486,36 @@ fun CreateCustomItemScreen(
     }
 
     // ── Main create screen ────────────────────────────────────────────────────
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            if (isCategory) "New Category" else "New Payment Method",
-                            fontWeight = FontWeight.Bold
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        if (isCategory) "New Category" else "New Payment Method",
+                        fontWeight = FontWeight.Bold
                     )
-                )
-            },
-            containerColor = MaterialTheme.colorScheme.surface
-        ) { innerPadding ->
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                modifier = Modifier.statusBarsPadding()
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 40.dp),
-                verticalArrangement = Arrangement.spacedBy(22.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
 
                 // ── Income / Expense switcher ─────────────────────────────────

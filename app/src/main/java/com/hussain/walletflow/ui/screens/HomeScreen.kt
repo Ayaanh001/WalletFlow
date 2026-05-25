@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.*
@@ -54,7 +55,6 @@ import com.hussain.walletflow.utils.getPaymentIcon
 import com.hussain.walletflow.utils.registerCustomCategories
 import com.hussain.walletflow.utils.registerCustomPaymentMethods
 import com.hussain.walletflow.viewmodel.TransactionViewModel
-import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.launch
@@ -232,14 +232,6 @@ fun HomeScreen(
                         }
         }
 
-        // derivedStateOf avoids recomposing everything just because selectedIds.size changed
-        val allSelected by remember {
-                derivedStateOf {
-                        val allIds = groupedTransactions.flatMap { it.third }.map { it.id }
-                        allIds.isNotEmpty() && selectedIds.containsAll(allIds)
-                }
-        }
-
         // ── Bulk-edit sheet state ────────────────────────────────────────────────
         var showBulkEditSheet by remember { mutableStateOf(false) }
         var showBulkDatePicker by remember { mutableStateOf(false) }
@@ -258,6 +250,7 @@ fun HomeScreen(
         // ── Create-new overlays (state lifted here so they render ABOVE ModalBottomSheet popup) ──
         var showNewCategoryFromSheet by remember { mutableStateOf(false) }
         var showNewPaymentFromSheet  by remember { mutableStateOf(false) }
+        var newCategoryIsIncome      by remember { mutableStateOf(false) }
         val homeCoroutineScope = rememberCoroutineScope()
 
         // Close create-new overlays on system back
@@ -280,25 +273,27 @@ fun HomeScreen(
 
                         // Sticky header
                         Surface(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                        .fillMaxWidth()
+                                        .statusBarsPadding(),
                                 color = MaterialTheme.colorScheme.surface,
                                 shadowElevation = if (listState.firstVisibleItemIndex > 0) 4.dp else 0.dp
                         ) {
                                 Crossfade(targetState = isSelectionMode, label = "topBarFade") { selection ->
 
-                                        val allSelected by remember {
+                                        val allSelectedInCrossfade by remember {
                                                 derivedStateOf {
                                                         val allIds = groupedTransactions.flatMap { it.third }.map { it.id }
-                                                        allIds.isNotEmpty() && selectedIds.containsAll(allIds)  // ← containsAll not size check
+                                                        allIds.isNotEmpty() && selectedIds.containsAll(allIds)
                                                 }
                                         }
 
-                                        if (isSelectionMode) {
+                                        if (selection) {
                                                 HomeSelectionHeader(
                                                         selectedCount = selectedIds.size,
-                                                        allSelected = allSelected,
+                                                        allSelected = allSelectedInCrossfade,
                                                         onToggleSelectAll = {
-                                                                if (allSelected) {
+                                                                if (allSelectedInCrossfade) {
                                                                         selectedIds.clear()
                                                                 } else {
                                                                         selectedIds.addAll(groupedTransactions.flatMap { it.third }.map { it.id })
@@ -576,7 +571,7 @@ fun HomeScreen(
                                                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                                                 ) {
                                                                         Icon(
-                                                                                Icons.Filled.ReceiptLong,
+                                                                                Icons.AutoMirrored.Filled.ReceiptLong,
                                                                                 contentDescription = null,
                                                                                 modifier = Modifier.size(64.dp),
                                                                                 tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
@@ -683,21 +678,21 @@ fun HomeScreen(
                         if (showBulkEditSheet) {
                                 BulkEditSheet(
                                         selectedCount = selectedIds.size,
-                                        initialStep = bulkEditReopenStep,          // ← pass saved step
+                                        initialStep = bulkEditReopenStep,
                                         onDismiss = { showBulkEditSheet = false },
                                         customCategories = customCategories,
                                         customPaymentMethods = customPaymentMethods,
                                         onChangeCategory = { category ->
                                                 viewModel.updateCategoryByIds(selectedIds.toList(), category)
                                                 showBulkEditSheet = false
-                                                bulkEditReopenStep = 0                 // ← reset for next open
+                                                bulkEditReopenStep = 0
                                                 selectedIds.clear()
                                                 isSelectionMode = false
                                         },
                                         onChangePaymentMethod = { method ->
                                                 viewModel.updatePaymentMethodByIds(selectedIds.toList(), method)
                                                 showBulkEditSheet = false
-                                                bulkEditReopenStep = 0                 // ← reset for next open
+                                                bulkEditReopenStep = 0
                                                 selectedIds.clear()
                                                 isSelectionMode = false
                                         },
@@ -705,13 +700,14 @@ fun HomeScreen(
                                                 showBulkEditSheet = false
                                                 showBulkDatePicker = true
                                         },
-                                        onRequestNewCategory = {
-                                                bulkEditReopenStep = 1                 // ← remember we were on step 1
+                                        onRequestNewCategory = { isIncome ->
+                                                newCategoryIsIncome = isIncome
+                                                bulkEditReopenStep = 1
                                                 showBulkEditSheet = false
                                                 showNewCategoryFromSheet = true
                                         },
                                         onRequestNewPayment = {
-                                                bulkEditReopenStep = 2                 // ← remember we were on step 2
+                                                bulkEditReopenStep = 2
                                                 showBulkEditSheet = false
                                                 showNewPaymentFromSheet = true
                                         }
@@ -723,6 +719,7 @@ fun HomeScreen(
                 if (showNewCategoryFromSheet) {
                         CreateCustomItemScreen(
                                 isCategory = true,
+                                initialTypeIndex = if (newCategoryIsIncome) 1 else 0,
                                 existingNames = allBulkCategories,
                                 onConfirm = { name, iconKey, colorHex, itemType ->
                                         val newItem = CustomItem(name, iconKey, colorHex, itemType)
@@ -731,11 +728,11 @@ fun HomeScreen(
                                                 customItemsRepo.addCustomCategory(newItem)
                                         }
                                         showNewCategoryFromSheet = false
-                                        showBulkEditSheet = true           // ← reopen sheet so user can pick the new category
+                                        showBulkEditSheet = true
                                 },
                                 onBack = {
                                         showNewCategoryFromSheet = false
-                                        showBulkEditSheet = true           // ← reopen sheet on back press
+                                        showBulkEditSheet = true
                                 }
                         )
                 }
@@ -750,11 +747,11 @@ fun HomeScreen(
                                                 customItemsRepo.addCustomPaymentMethod(newItem)
                                         }
                                         showNewPaymentFromSheet = false
-                                        showBulkEditSheet = true           // ← reopen sheet so user can pick the new method
+                                        showBulkEditSheet = true
                                 },
                                 onBack = {
                                         showNewPaymentFromSheet = false
-                                        showBulkEditSheet = true           // ← reopen sheet on back press
+                                        showBulkEditSheet = true
                                 }
                         )
                 }
@@ -906,14 +903,14 @@ private fun HomeSelectionHeader(
 @Composable
 private fun BulkEditSheet(
         selectedCount: Int,
-        initialStep: Int = 0,                  // ← new param
+        initialStep: Int = 0,
         onDismiss: () -> Unit,
         customCategories: List<CustomItem>,
         customPaymentMethods: List<CustomItem>,
         onChangeCategory: (String) -> Unit,
         onChangePaymentMethod: (String) -> Unit,
         onChangeDate: () -> Unit,
-        onRequestNewCategory: () -> Unit,
+        onRequestNewCategory: (isIncome: Boolean) -> Unit,
         onRequestNewPayment: () -> Unit
 ) {
         var step by remember { mutableIntStateOf(initialStep) }
@@ -952,7 +949,7 @@ private fun BulkEditSheet(
                                                 modifier = Modifier.size(32.dp)
                                         ) {
                                                 Icon(
-                                                        Icons.Default.ArrowBack,
+                                                        Icons.AutoMirrored.Filled.ArrowBack,
                                                         contentDescription = "Back",
                                                         modifier = Modifier.size(20.dp),
                                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -966,7 +963,7 @@ private fun BulkEditSheet(
                                                 2    -> "Select Payment Method"
                                                 else -> "Edit $selectedCount transaction${if (selectedCount > 1) "s" else ""}"
                                         },
-                                        style = MaterialTheme.typography.titleMedium,
+                                        style = if (step == 0) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                 )
                         }
@@ -997,8 +994,7 @@ private fun BulkEditSheet(
                                                 modifier = Modifier.fillMaxWidth(),
                                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                                         ) {
-
-                                                // ── Expense label ─────────────────────────────────────────────────
+                                                // Expense group
                                                 Row(
                                                         modifier = Modifier.fillMaxWidth(),
                                                         verticalAlignment = Alignment.CenterVertically,
@@ -1024,9 +1020,9 @@ private fun BulkEditSheet(
                                                                 val chipColor = getCategoryColor(category)
                                                                 Row(
                                                                         modifier = Modifier
-                                                                                .clip(RoundedCornerShape(13.dp))
+                                                                                .clip(RoundedCornerShape(50.dp))
                                                                                 .background(chipColor.copy(alpha = 0.12f))
-                                                                                .border(1.dp, chipColor.copy(alpha = 0.3f), RoundedCornerShape(13.dp))
+                                                                                .border(1.dp, chipColor.copy(alpha = 0.3f), RoundedCornerShape(50.dp))
                                                                                 .clickable { onChangeCategory(category) }
                                                                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                                                                         verticalAlignment = Alignment.CenterVertically,
@@ -1046,9 +1042,23 @@ private fun BulkEditSheet(
                                                                         )
                                                                 }
                                                         }
+                                                        // "+ New" chip for Expense
+                                                        Row(
+                                                                modifier = Modifier
+                                                                        .clip(RoundedCornerShape(50.dp))
+                                                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                                                                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
+                                                                        .clickable { onRequestNewCategory(false) }
+                                                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        ) {
+                                                                Icon(Icons.Default.Add, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                                                Text("New", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                                                        }
                                                 }
 
-                                                // ── Income label ──────────────────────────────────────────────────
+                                                // Income group
                                                 Row(
                                                         modifier = Modifier.fillMaxWidth(),
                                                         verticalAlignment = Alignment.CenterVertically,
@@ -1074,9 +1084,9 @@ private fun BulkEditSheet(
                                                                 val chipColor = getCategoryColor(category)
                                                                 Row(
                                                                         modifier = Modifier
-                                                                                .clip(RoundedCornerShape(13.dp))
+                                                                                .clip(RoundedCornerShape(50.dp))
                                                                                 .background(chipColor.copy(alpha = 0.12f))
-                                                                                .border(1.dp, chipColor.copy(alpha = 0.3f), RoundedCornerShape(13.dp))
+                                                                                .border(1.dp, chipColor.copy(alpha = 0.3f), RoundedCornerShape(50.dp))
                                                                                 .clickable { onChangeCategory(category) }
                                                                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                                                                         verticalAlignment = Alignment.CenterVertically,
@@ -1096,108 +1106,88 @@ private fun BulkEditSheet(
                                                                         )
                                                                 }
                                                         }
+                                                        // "+ New" chip for Income
+                                                        Row(
+                                                                modifier = Modifier
+                                                                        .clip(RoundedCornerShape(50.dp))
+                                                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                                                                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
+                                                                        .clickable { onRequestNewCategory(true) }
+                                                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        ) {
+                                                                Icon(Icons.Default.Add, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                                                Text("New", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+                                                        }
                                                 }
+                                        }
+                                }
 
-                                                // ── "+ New" chip (standalone at the bottom) ───────────────────────
+                                2 -> {
+                                        @OptIn(ExperimentalLayoutApi::class)
+                                        FlowRow(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                                allPaymentMethods.forEach { method ->
+                                                        val chipColor = getPaymentChipColor(method)
+                                                        Row(
+                                                                modifier = Modifier
+                                                                        .clip(RoundedCornerShape(50.dp))
+                                                                        .background(chipColor.copy(alpha = 0.12f))
+                                                                        .border(1.dp, chipColor.copy(alpha = 0.3f), RoundedCornerShape(50.dp))
+                                                                        .clickable { onChangePaymentMethod(method) }
+                                                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                                                verticalAlignment = Alignment.CenterVertically,
+                                                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                                        ) {
+                                                                when (method) {
+                                                                        "GPay" -> Image(
+                                                                                painter = painterResource(R.drawable.gpay),
+                                                                                contentDescription = "GPay",
+                                                                                modifier = Modifier.size(14.dp)
+                                                                        )
+                                                                        "PhonePe" -> Image(
+                                                                                painter = painterResource(R.drawable.phonepe),
+                                                                                contentDescription = "PhonePe",
+                                                                                modifier = Modifier.size(14.dp)
+                                                                        )
+                                                                        else -> Icon(
+                                                                                getPaymentIcon(method),
+                                                                                contentDescription = null,
+                                                                                modifier = Modifier.size(14.dp),
+                                                                                tint = chipColor
+                                                                        )
+                                                                }
+                                                                Text(
+                                                                        text = method,
+                                                                        style = MaterialTheme.typography.labelMedium,
+                                                                        fontWeight = FontWeight.SemiBold,
+                                                                        color = chipColor
+                                                                )
+                                                        }
+                                                }
+                                                // "+ New" chip
                                                 Row(
                                                         modifier = Modifier
-                                                                .clip(RoundedCornerShape(13.dp))
+                                                                .clip(RoundedCornerShape(50.dp))
                                                                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(13.dp))
-                                                                .clickable { onRequestNewCategory() }
+                                                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(50.dp))
+                                                                .clickable { onRequestNewPayment() }
                                                                 .padding(horizontal = 12.dp, vertical = 10.dp),
                                                         verticalAlignment = Alignment.CenterVertically,
                                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                                 ) {
-                                                        Icon(
-                                                                Icons.Default.Add,
-                                                                contentDescription = "New category",
-                                                                modifier = Modifier.size(14.dp),
-                                                                tint = MaterialTheme.colorScheme.primary
-                                                        )
-                                                        Text(
-                                                                text = "New",
-                                                                style = MaterialTheme.typography.labelMedium,
-                                                                fontWeight = FontWeight.SemiBold,
-                                                                color = MaterialTheme.colorScheme.primary
-                                                        )
+                                                        Icon(Icons.Default.Add, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                                        Text("New", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
                                                 }
-                                        }
-                                }                                2 -> {
-                                @OptIn(ExperimentalLayoutApi::class)
-                                FlowRow(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                        allPaymentMethods.forEach { method ->
-                                                val chipColor = getPaymentChipColor(method)
-                                                Row(
-                                                        modifier = Modifier
-                                                                .clip(RoundedCornerShape(13.dp))
-                                                                .background(chipColor.copy(alpha = 0.12f))
-                                                                .border(1.dp, chipColor.copy(alpha = 0.3f), RoundedCornerShape(13.dp))
-                                                                .clickable { onChangePaymentMethod(method) }
-                                                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                                ) {
-                                                        when (method) {
-                                                                "GPay" -> androidx.compose.foundation.Image(
-                                                                        painter = painterResource(R.drawable.gpay),
-                                                                        contentDescription = "GPay",
-                                                                        modifier = Modifier.size(14.dp)
-                                                                )
-                                                                "PhonePe" -> androidx.compose.foundation.Image(
-                                                                        painter = painterResource(R.drawable.phonepe),
-                                                                        contentDescription = "PhonePe",
-                                                                        modifier = Modifier.size(14.dp)
-                                                                )
-                                                                else -> Icon(
-                                                                        getPaymentIcon(method),
-                                                                        contentDescription = null,
-                                                                        modifier = Modifier.size(14.dp),
-                                                                        tint = chipColor
-                                                                )
-                                                        }
-                                                        Text(
-                                                                text = method,
-                                                                style = MaterialTheme.typography.labelMedium,
-                                                                fontWeight = FontWeight.SemiBold,
-                                                                color = chipColor
-                                                        )
-                                                }
-                                        }
-                                        // "+ New" chip
-                                        Row(
-                                                modifier = Modifier
-                                                        .clip(RoundedCornerShape(13.dp))
-                                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                                                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f), RoundedCornerShape(13.dp))
-                                                        .clickable { onRequestNewPayment() }
-                                                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                                Icon(
-                                                        Icons.Default.Add,
-                                                        contentDescription = "New payment method",
-                                                        modifier = Modifier.size(14.dp),
-                                                        tint = MaterialTheme.colorScheme.primary
-                                                )
-                                                Text(
-                                                        text = "New",
-                                                        style = MaterialTheme.typography.labelMedium,
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        color = MaterialTheme.colorScheme.primary
-                                                )
                                         }
                                 }
                         }
-                        }
                 }
         }
-
 }
 
 @Composable
@@ -1209,17 +1199,17 @@ private fun BulkEditMenuOption(
         Row(
                 modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(24.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         .clickable(onClick = onClick)
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
                 Box(
                         modifier = Modifier
                                 .size(38.dp)
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center
                 ) {
@@ -1232,7 +1222,7 @@ private fun BulkEditMenuOption(
                 }
                 Text(
                         text = label,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                 )

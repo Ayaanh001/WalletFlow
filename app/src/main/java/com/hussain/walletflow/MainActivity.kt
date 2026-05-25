@@ -127,6 +127,7 @@ fun MainScreen() {
         val tabs = remember { listOf(Screen.Home, Screen.Passbook) }
 
         Scaffold(
+                contentWindowInsets = WindowInsets(0, 0, 0, 0), // Handle insets manually in screens
                 bottomBar = {
                         AnimatedVisibility(
                                 visible = showChrome,

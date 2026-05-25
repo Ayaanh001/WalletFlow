@@ -203,7 +203,7 @@ fun PassbookScreen(
         val surfaceColor = MaterialTheme.colorScheme.surface
 
         // ── UI ────────────────────────────────────────────────────────────────
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
 
                 if (isSelectionMode) {
                         SelectionHeader(
